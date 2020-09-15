@@ -86,6 +86,7 @@ class Pot:
         self.last_direction = 0
         self.last_update = None
         self.error_on_setpoint_achieved = False
+        self.level_setpoint = None
 
     def update(self):
         # Update state
@@ -173,6 +174,7 @@ class Pot:
             self.flood()
         elif self.fluid_setpoint < self.fluid_estimate and self.direction != -1:
             self.drain()
+        self.level_setpoint = level_setpoint
 
     @property
     def level(self):
@@ -223,5 +225,53 @@ def test():
         pump.off()
 
 if __name__ == "__main__":
-    #p1 = Pot(4, 27, 17, 0.88)
-    #p2 = Pot(23, 22, 18, 1.02)
+    import asyncio
+    import asyncio_mqtt
+    import traceback
+
+    async def main():
+        PERIOD = 0.05
+
+        #pump1 = GPIOPump(4, 27, 17)
+        #pump2 = GPIOPump(23, 22, 18)
+        pump1 = FakePump()
+        pump2 = FakePump()
+        pot1 = Pot(pump1, flow_rate=0.88, max_container=600, max_extra_flood=100, max_extra_drain=50)
+        pot2 = Pot(pump2, flow_rate=1.02, max_container=600, max_extra_flood=100, max_extra_drain=50)
+
+        pots = {"1": pot1, "2": pot2}
+
+        async def handle_pumps():
+            while True:
+                for name, pot in pots.items():
+                    pot.update()
+                    for variable in ("level_setpoint", "level", "fluid", "container", "direction"):
+                        topic = "pot/{}/{}".format(name, variable)
+                        value = getattr(pot, variable)
+                        if value is None:
+                            value = ""
+                        value = str(value).encode()
+                        await client.publish(topic, value, qos=1)
+                await asyncio.sleep(PERIOD)
+
+        async def handle_mqtt():
+            async with client.filtered_messages("pot/+/set_level") as messages:
+                async for message in messages:
+                    try:
+                        name = message.topic.split("/")[1]
+                        pot = pots[name]
+
+                        setpoint = float(message.payload.decode())
+                        pot.set_level(setpoint)
+                    except (ValueError, TypeError):
+                        traceback.print_exc()
+
+        try:
+            async with asyncio_mqtt.Client("localhost") as client:
+                await client.subscribe("pot/+/set_level")
+                await asyncio.gather(handle_pumps(), handle_mqtt())
+        finally:
+            for pot in pots.values():
+                pot.pump.off()
+
+    asyncio.get_event_loop().run_until_complete(main())
