@@ -1,6 +1,5 @@
-#from RPi import GPIO
+from RPi import GPIO
 import time
-#from contextlib import contextmanager
 
 class FillError(Exception):
     pass
@@ -54,8 +53,8 @@ class GPIOPump:
         self.off()
 
     def flood(self):
-        GPIO.output(self.flood_pin, GPIO.LOW)
         GPIO.output(self.drain_pin, GPIO.HIGH)
+        GPIO.output(self.flood_pin, GPIO.LOW)
 
     def drain(self):
         GPIO.output(self.flood_pin, GPIO.HIGH)
@@ -232,12 +231,12 @@ if __name__ == "__main__":
     async def main():
         PERIOD = 0.05
 
-        #pump1 = GPIOPump(4, 27, 17)
-        #pump2 = GPIOPump(23, 22, 18)
-        pump1 = FakePump()
-        pump2 = FakePump()
-        pot1 = Pot(pump1, flow_rate=0.88, max_container=600, max_extra_flood=100, max_extra_drain=50)
-        pot2 = Pot(pump2, flow_rate=1.02, max_container=600, max_extra_flood=100, max_extra_drain=50)
+        pump1 = GPIOPump(4, 27, 17)
+        pump2 = GPIOPump(23, 22, 18)
+        #pump1 = FakePump()
+        #pump2 = FakePump()
+        pot1 = Pot(pump1, flow_rate=1, fluid_estimate=0, max_container=500, max_extra_flood=100, max_extra_drain=50)
+        pot2 = Pot(pump2, flow_rate=1, fluid_estimate=0, max_container=500, max_extra_flood=100, max_extra_drain=50)
 
         pots = {"1": pot1, "2": pot2}
 
@@ -255,6 +254,7 @@ if __name__ == "__main__":
                 await asyncio.sleep(PERIOD)
 
         async def handle_mqtt():
+            print("Waiting for messages...")
             async with client.filtered_messages("pot/+/set_level") as messages:
                 async for message in messages:
                     try:
@@ -273,5 +273,6 @@ if __name__ == "__main__":
         finally:
             for pot in pots.values():
                 pot.pump.off()
+            GPIO.cleanup()
 
     asyncio.get_event_loop().run_until_complete(main())
