@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name dot-driver-rescue)(type Legacy)(uri /home/eric/rainbow-vomit/dot-driver/dot-driver-rescue.lib)(options "")(descr ""))
+  (lib (name TB6559)(type Legacy)(uri ${KIPRJMOD}/TB6559.lib)(options "")(descr ""))
+)
