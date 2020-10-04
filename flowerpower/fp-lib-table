@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name flowerpower)(type KiCad)(uri ${KIPRJMOD}/flowerpower.pretty)(options "")(descr ""))
+  (lib (name Relay_THT)(type KiCad)(uri ${KISYSMOD}/Relay_THT.pretty)(options "")(descr ""))
+)

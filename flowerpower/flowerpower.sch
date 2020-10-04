@@ -19,7 +19,7 @@ U 1 1 5F72889D
 P 3450 4750
 F 0 "U4" H 2800 3100 50  0000 C CNN
 F 1 "STM32F051C6Tx" H 3050 3000 50  0000 C CNN
-F 2 "Package_QFP:LQFP-48_7x7mm_P0.5mm" H 2950 3250 50  0001 R CNN
+F 2 "Housings_QFP:LQFP-48_7x7mm_Pitch0.5mm" H 2950 3250 50  0001 R CNN
 F 3 "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00039193.pdf" H 3450 4750 50  0001 C CNN
 	1    3450 4750
 	1    0    0    -1  
@@ -357,7 +357,7 @@ U 1 1 5F7B406D
 P 2450 900
 F 0 "U1" H 2450 1267 50  0000 C CNN
 F 1 "LM2576HVS-5" H 2450 1176 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:TO-263-5_TabPin3" H 2450 650 50  0001 L CIN
+F 2 "TO_SOT_Packages_SMD:TO-263-5Lead" H 2450 650 50  0001 L CIN
 F 3 "http://www.ti.com/lit/ds/symlink/lm2576.pdf" H 2450 900 50  0001 C CNN
 	1    2450 900 
 	1    0    0    -1  
@@ -379,7 +379,7 @@ U 1 1 5F7C0EA8
 P 3300 1000
 F 0 "L1" V 3250 1000 50  0000 C CNN
 F 1 "330U" V 3399 1000 50  0000 C CNN
-F 2 "" H 3300 1000 50  0001 C CNN
+F 2 "flowerpower:toroid_14.2_32.5dia" H 3300 1000 50  0001 C CNN
 F 3 "~" H 3300 1000 50  0001 C CNN
 	1    3300 1000
 	0    -1   -1   0   
@@ -489,32 +489,14 @@ $EndComp
 $Comp
 L power:GND #PWR07
 U 1 1 5F7F489D
-P 1600 1100
-F 0 "#PWR07" H 1600 850 50  0001 C CNN
-F 1 "GND" H 1605 927 50  0000 C CNN
-F 2 "" H 1600 1100 50  0001 C CNN
-F 3 "" H 1600 1100 50  0001 C CNN
-	1    1600 1100
+P 1400 1100
+F 0 "#PWR07" H 1400 850 50  0001 C CNN
+F 1 "GND" H 1405 927 50  0000 C CNN
+F 2 "" H 1400 1100 50  0001 C CNN
+F 3 "" H 1400 1100 50  0001 C CNN
+	1    1400 1100
 	1    0    0    -1  
 $EndComp
-$Comp
-L Connector:Barrel_Jack_MountingPin J1
-U 1 1 5F7F52E4
-P 900 900
-F 0 "J1" H 957 1217 50  0000 C CNN
-F 1 "Power In" H 957 1126 50  0000 C CNN
-F 2 "" H 950 860 50  0001 C CNN
-F 3 "~" H 950 860 50  0001 C CNN
-	1    900  900 
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	1200 1000 1200 1200
-Wire Wire Line
-	1200 1200 900  1200
-Wire Wire Line
-	1200 1200 1200 1300
-Connection ~ 1200 1200
 $Comp
 L power:GND #PWR010
 U 1 1 5F7F8BB2
@@ -575,26 +557,26 @@ $EndComp
 $Comp
 L Device:CP C1
 U 1 1 5F805496
-P 1600 950
-F 0 "C1" H 1718 996 50  0000 L CNN
-F 1 "CP" H 1718 905 50  0000 L CNN
-F 2 "" H 1638 800 50  0001 C CNN
-F 3 "~" H 1600 950 50  0001 C CNN
-	1    1600 950 
+P 1400 950
+F 0 "C1" H 1300 1300 50  0000 L CNN
+F 1 "100U" H 1300 1200 50  0000 L CNN
+F 2 "Capacitors_SMD:c_elec_10x10" H 1438 800 50  0001 C CNN
+F 3 "~" H 1400 950 50  0001 C CNN
+	1    1400 950 
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1200 800  1600 800 
+	1200 800  1400 800 
 Connection ~ 1600 800 
 Wire Wire Line
-	1600 800  1950 800 
+	1600 800  1750 800 
 $Comp
 L Device:CP C2
 U 1 1 5F809277
 P 3550 1250
 F 0 "C2" H 3668 1296 50  0000 L CNN
 F 1 "330U" H 3668 1205 50  0000 L CNN
-F 2 "" H 3588 1100 50  0001 C CNN
+F 2 "Capacitors_SMD:c_elec_10x10" H 3588 1100 50  0001 C CNN
 F 3 "~" H 3550 1250 50  0001 C CNN
 	1    3550 1250
 	1    0    0    -1  
@@ -634,7 +616,7 @@ U 1 1 5F81A90E
 P 4650 2100
 F 0 "U2" H 4650 2342 50  0000 C CNN
 F 1 "NCP1117-3.3_SOT223" H 4650 2251 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-223-3_TabPin2" H 4650 2300 50  0001 C CNN
+F 2 "TO_SOT_Packages_SMD:SOT-223" H 4650 2300 50  0001 C CNN
 F 3 "http://www.onsemi.com/pub_link/Collateral/NCP1117-D.PDF" H 4750 1850 50  0001 C CNN
 	1    4650 2100
 	1    0    0    -1  
@@ -667,7 +649,7 @@ U 1 1 5F825FE6
 P 1250 4600
 F 0 "Y1" H 1250 4868 50  0000 C CNN
 F 1 "32.768K" H 1250 4777 50  0000 C CNN
-F 2 "" H 1250 4600 50  0001 C CNN
+F 2 "flowerpower:SOJ-4" H 1250 4600 50  0001 C CNN
 F 3 "~" H 1250 4600 50  0001 C CNN
 	1    1250 4600
 	1    0    0    -1  
@@ -836,7 +818,7 @@ AR Path="/5F8AB36C/5F8BCF42" Ref="U?"  Part="1"
 AR Path="/5F8BCF42" Ref="U3"  Part="1" 
 F 0 "U3" H 7550 2517 50  0000 C CNN
 F 1 "74HC14" H 7550 2426 50  0000 C CNN
-F 2 "" H 7550 2200 50  0001 C CNN
+F 2 "Housings_SOIC:SOIC-14_3.9x8.7mm_Pitch1.27mm" H 7550 2200 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 7550 2200 50  0001 C CNN
 	1    7550 2200
 	1    0    0    -1  
@@ -1210,7 +1192,7 @@ AR Path="/5F8AB36C/5FA036D5" Ref="U?"  Part="1"
 AR Path="/5FA036D5" Ref="U3"  Part="2" 
 F 0 "U3" H 6750 3517 50  0000 C CNN
 F 1 "74HC14" H 6750 3426 50  0000 C CNN
-F 2 "" H 6750 3200 50  0001 C CNN
+F 2 "Housings_SOIC:SOIC-14_3.9x8.7mm_Pitch1.27mm" H 6750 3200 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 6750 3200 50  0001 C CNN
 	2    6750 3200
 	0    1    1    0   
@@ -1250,7 +1232,7 @@ AR Path="/5F8AB36C/5FA0D3B7" Ref="U?"  Part="1"
 AR Path="/5FA0D3B7" Ref="U3"  Part="3" 
 F 0 "U3" H 6750 4267 50  0000 C CNN
 F 1 "74HC14" H 6750 4176 50  0000 C CNN
-F 2 "" H 6750 3950 50  0001 C CNN
+F 2 "Housings_SOIC:SOIC-14_3.9x8.7mm_Pitch1.27mm" H 6750 3950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 6750 3950 50  0001 C CNN
 	3    6750 3950
 	0    1    1    0   
@@ -1290,7 +1272,7 @@ AR Path="/5F8AB36C/5FA12D54" Ref="U?"  Part="1"
 AR Path="/5FA12D54" Ref="U3"  Part="4" 
 F 0 "U3" H 6750 5017 50  0000 C CNN
 F 1 "74HC14" H 6750 4926 50  0000 C CNN
-F 2 "" H 6750 4700 50  0001 C CNN
+F 2 "Housings_SOIC:SOIC-14_3.9x8.7mm_Pitch1.27mm" H 6750 4700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 6750 4700 50  0001 C CNN
 	4    6750 4700
 	0    1    1    0   
@@ -1330,7 +1312,7 @@ AR Path="/5F8AB36C/5FA12D6B" Ref="U?"  Part="1"
 AR Path="/5FA12D6B" Ref="U3"  Part="5" 
 F 0 "U3" H 6750 5767 50  0000 C CNN
 F 1 "74HC14" H 6750 5676 50  0000 C CNN
-F 2 "" H 6750 5450 50  0001 C CNN
+F 2 "Housings_SOIC:SOIC-14_3.9x8.7mm_Pitch1.27mm" H 6750 5450 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 6750 5450 50  0001 C CNN
 	5    6750 5450
 	0    1    1    0   
@@ -1370,7 +1352,7 @@ AR Path="/5F8AB36C/5FA1A826" Ref="U?"  Part="1"
 AR Path="/5FA1A826" Ref="U3"  Part="6" 
 F 0 "U3" H 6750 6517 50  0000 C CNN
 F 1 "74HC14" H 6750 6426 50  0000 C CNN
-F 2 "" H 6750 6200 50  0001 C CNN
+F 2 "Housings_SOIC:SOIC-14_3.9x8.7mm_Pitch1.27mm" H 6750 6200 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 6750 6200 50  0001 C CNN
 	6    6750 6200
 	0    1    1    0   
@@ -1399,7 +1381,7 @@ AR Path="/5F8AB36C/5FA2B608" Ref="U?"  Part="1"
 AR Path="/5FA2B608" Ref="U3"  Part="7" 
 F 0 "U3" H 7700 5000 50  0000 C CNN
 F 1 "74HC14" V 7650 5400 50  0000 C CNN
-F 2 "" H 7900 5400 50  0001 C CNN
+F 2 "Housings_SOIC:SOIC-14_3.9x8.7mm_Pitch1.27mm" H 7900 5400 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 7900 5400 50  0001 C CNN
 	7    7900 5400
 	1    0    0    -1  
@@ -1483,4 +1465,48 @@ F 3 "" H 850 2000 50  0001 C CNN
 	1    850  2000
 	1    0    0    -1  
 $EndComp
+Connection ~ 1400 800 
+Wire Wire Line
+	1400 800  1600 800 
+$Comp
+L Device:C C30
+U 1 1 5F776BE6
+P 1750 950
+F 0 "C30" H 1750 1300 50  0000 L CNN
+F 1 "10U" H 1750 1200 50  0000 L CNN
+F 2 "Capacitors_SMD:C_1206" H 1788 800 50  0001 C CNN
+F 3 "~" H 1750 950 50  0001 C CNN
+	1    1750 950 
+	1    0    0    -1  
+$EndComp
+Connection ~ 1750 800 
+Wire Wire Line
+	1750 800  1950 800 
+$Comp
+L power:GND #PWR0120
+U 1 1 5F777303
+P 1750 1100
+F 0 "#PWR0120" H 1750 850 50  0001 C CNN
+F 1 "GND" H 1755 927 50  0000 C CNN
+F 2 "" H 1750 1100 50  0001 C CNN
+F 3 "" H 1750 1100 50  0001 C CNN
+	1    1750 1100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:Barrel_Jack_Switch J1
+U 1 1 5F7B8483
+P 900 900
+F 0 "J1" H 957 1217 50  0000 C CNN
+F 1 "Power In" H 957 1126 50  0000 C CNN
+F 2 "Connect:BARREL_JACK" H 950 860 50  0001 C CNN
+F 3 "~" H 950 860 50  0001 C CNN
+	1    900  900 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1200 900  1200 1000
+Connection ~ 1200 1000
+Wire Wire Line
+	1200 1000 1200 1300
 $EndSCHEMATC
