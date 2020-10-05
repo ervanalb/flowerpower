@@ -13,17 +13,6 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-$Comp
-L MCU_ST_STM32F0:STM32F051C6Tx U4
-U 1 1 5F72889D
-P 3450 4750
-F 0 "U4" H 2800 3100 50  0000 C CNN
-F 1 "STM32F051C6Tx" H 3050 3000 50  0000 C CNN
-F 2 "Housings_QFP:LQFP-48_7x7mm_Pitch0.5mm" H 2950 3250 50  0001 R CNN
-F 3 "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00039193.pdf" H 3450 4750 50  0001 C CNN
-	1    3450 4750
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	3350 6350 3450 6350
 Connection ~ 3450 6350
@@ -38,17 +27,6 @@ F 1 "GND" H 3455 6277 50  0000 C CNN
 F 2 "" H 3450 6450 50  0001 C CNN
 F 3 "" H 3450 6450 50  0001 C CNN
 	1    3450 6450
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector:USB_B_Micro J4
-U 1 1 5BE2379A
-P 2200 2300
-F 0 "J4" H 2255 2767 50  0000 C CNN
-F 1 "USB_B_Micro" H 2255 2676 50  0000 C CNN
-F 2 "Connect:USB_Micro-B" H 2350 2250 50  0001 C CNN
-F 3 "~" H 2350 2250 50  0001 C CNN
-	1    2200 2300
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -201,8 +179,6 @@ Text Label 3150 1950 2    50   ~ 0
 VBUS_SENSE
 Text Label 1950 3550 0    50   ~ 0
 BUTTON
-Wire Wire Line
-	2100 2700 2200 2700
 $Comp
 L Device:C C9
 U 1 1 5BEB7A37
@@ -281,7 +257,6 @@ Wire Wire Line
 	4050 5850 4600 5850
 Wire Wire Line
 	4050 5750 4600 5750
-Connection ~ 2200 2700
 Text Label 4600 5750 2    50   ~ 0
 USB_DM
 Wire Wire Line
@@ -567,9 +542,6 @@ F 3 "~" H 1400 950 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1200 800  1400 800 
-Connection ~ 1600 800 
-Wire Wire Line
-	1600 800  1750 800 
 $Comp
 L Device:CP C2
 U 1 1 5F809277
@@ -619,17 +591,6 @@ F 1 "NCP1117-3.3_SOT223" H 4650 2251 50  0000 C CNN
 F 2 "TO_SOT_Packages_SMD:SOT-223" H 4650 2300 50  0001 C CNN
 F 3 "http://www.onsemi.com/pub_link/Collateral/NCP1117-D.PDF" H 4750 1850 50  0001 C CNN
 	1    4650 2100
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:+VDC #PWR01
-U 1 1 5F82049D
-P 1600 800
-F 0 "#PWR01" H 1600 700 50  0001 C CNN
-F 1 "+VDC" H 1600 1075 50  0000 C CNN
-F 2 "" H 1600 800 50  0001 C CNN
-F 3 "" H 1600 800 50  0001 C CNN
-	1    1600 800 
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1466,8 +1427,6 @@ F 3 "" H 850 2000 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Connection ~ 1400 800 
-Wire Wire Line
-	1400 800  1600 800 
 $Comp
 L Device:C C30
 U 1 1 5F776BE6
@@ -1509,4 +1468,226 @@ Wire Wire Line
 Connection ~ 1200 1000
 Wire Wire Line
 	1200 1000 1200 1300
+$Comp
+L Device:C C31
+U 1 1 5F99DE7B
+P 4050 7200
+F 0 "C31" H 4165 7246 50  0000 L CNN
+F 1 "100n" H 4165 7155 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 4088 7050 50  0001 C CNN
+F 3 "~" H 4050 7200 50  0001 C CNN
+	1    4050 7200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR0121
+U 1 1 5F99DE85
+P 4050 7050
+F 0 "#PWR0121" H 4050 6900 50  0001 C CNN
+F 1 "+3V3" H 4065 7223 50  0000 C CNN
+F 2 "" H 4050 7050 50  0001 C CNN
+F 3 "" H 4050 7050 50  0001 C CNN
+	1    4050 7050
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0122
+U 1 1 5F99DE8F
+P 4050 7350
+F 0 "#PWR0122" H 4050 7100 50  0001 C CNN
+F 1 "GND" H 4055 7177 50  0000 C CNN
+F 2 "" H 4050 7350 50  0001 C CNN
+F 3 "" H 4050 7350 50  0001 C CNN
+	1    4050 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR0123
+U 1 1 5F9F7CEB
+P 2700 4100
+F 0 "#PWR0123" H 2700 3950 50  0001 C CNN
+F 1 "+3V3" V 2715 4228 50  0000 L CNN
+F 2 "" H 2700 4100 50  0001 C CNN
+F 3 "" H 2700 4100 50  0001 C CNN
+	1    2700 4100
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:GND #PWR0124
+U 1 1 5F9F902F
+P 2700 3900
+F 0 "#PWR0124" H 2700 3650 50  0001 C CNN
+F 1 "GND" H 2705 3727 50  0000 C CNN
+F 2 "" H 2700 3900 50  0001 C CNN
+F 3 "" H 2700 3900 50  0001 C CNN
+	1    2700 3900
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2850 3950 2750 3950
+Wire Wire Line
+	2750 3950 2750 3900
+Wire Wire Line
+	2750 3900 2700 3900
+Wire Wire Line
+	2700 4100 2750 4100
+Wire Wire Line
+	2750 4100 2750 4050
+Wire Wire Line
+	2750 4050 2850 4050
+$Comp
+L Device:C C32
+U 1 1 5FA08621
+P 4500 7200
+F 0 "C32" H 4615 7246 50  0000 L CNN
+F 1 "100n" H 4615 7155 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 4538 7050 50  0001 C CNN
+F 3 "~" H 4500 7200 50  0001 C CNN
+	1    4500 7200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3V3 #PWR0125
+U 1 1 5FA0862B
+P 4500 7050
+F 0 "#PWR0125" H 4500 6900 50  0001 C CNN
+F 1 "+3V3" H 4515 7223 50  0000 C CNN
+F 2 "" H 4500 7050 50  0001 C CNN
+F 3 "" H 4500 7050 50  0001 C CNN
+	1    4500 7050
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0126
+U 1 1 5FA08635
+P 4500 7350
+F 0 "#PWR0126" H 4500 7100 50  0001 C CNN
+F 1 "GND" H 4505 7177 50  0000 C CNN
+F 2 "" H 4500 7350 50  0001 C CNN
+F 3 "" H 4500 7350 50  0001 C CNN
+	1    4500 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L MCU_ST_STM32F0:STM32F051C6Tx U4
+U 1 1 5F72889D
+P 3450 4750
+F 0 "U4" H 2800 3100 50  0000 C CNN
+F 1 "STM32F041C6Tx" H 3050 3000 50  0000 C CNN
+F 2 "Housings_QFP:LQFP-48_7x7mm_Pitch0.5mm" H 2950 3250 50  0001 R CNN
+F 3 "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00039193.pdf" H 3450 4750 50  0001 C CNN
+	1    3450 4750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2850 5450 2350 5450
+Wire Wire Line
+	2850 5550 2350 5550
+Text Label 2350 4750 0    50   ~ 0
+GPIO1
+Text Label 2350 5450 0    50   ~ 0
+GPIO2
+Text Label 2350 5550 0    50   ~ 0
+GPIO3
+Wire Wire Line
+	1400 800  1600 800 
+$Comp
+L power:VDC #PWR0127
+U 1 1 5FA4D391
+P 1600 700
+F 0 "#PWR0127" H 1600 600 50  0001 C CNN
+F 1 "VDC" H 1615 873 50  0000 C CNN
+F 2 "" H 1600 700 50  0001 C CNN
+F 3 "" H 1600 700 50  0001 C CNN
+	1    1600 700 
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1600 700  1600 800 
+Connection ~ 1600 800 
+Wire Wire Line
+	1600 800  1750 800 
+Wire Wire Line
+	4050 4650 4600 4650
+Wire Wire Line
+	4050 4750 4600 4750
+Wire Wire Line
+	4600 4850 4050 4850
+Wire Wire Line
+	4050 4950 4600 4950
+Wire Wire Line
+	4050 5250 4600 5250
+Wire Wire Line
+	4050 5350 4600 5350
+Wire Wire Line
+	2350 4650 2850 4650
+Text Label 4600 4650 2    50   ~ 0
+P1A
+Text Label 4600 4750 2    50   ~ 0
+P1B
+Text Label 4600 4850 2    50   ~ 0
+P2A
+Text Label 4600 4950 2    50   ~ 0
+P2B
+Text Label 4600 5250 2    50   ~ 0
+P3A
+Text Label 4600 5350 2    50   ~ 0
+P3B
+Text Label 2350 4650 0    50   ~ 0
+P4A
+Wire Wire Line
+	2350 4750 2850 4750
+Text Label 2350 5950 0    50   ~ 0
+P4B
+Wire Wire Line
+	2850 5950 2350 5950
+Wire Wire Line
+	2850 6050 2350 6050
+Text Label 2350 6050 0    50   ~ 0
+P5A
+Text Label 2350 6150 0    50   ~ 0
+P5B
+Wire Wire Line
+	2350 6150 2850 6150
+Wire Wire Line
+	2850 4850 2350 4850
+Wire Wire Line
+	2850 5650 2350 5650
+Wire Wire Line
+	2850 5750 2350 5750
+Text Label 2350 4850 0    50   ~ 0
+P1W
+Text Label 2350 5650 0    50   ~ 0
+P2W
+Text Label 2350 5750 0    50   ~ 0
+P3W
+Wire Wire Line
+	2850 5850 2350 5850
+Text Label 2350 5850 0    50   ~ 0
+P4W
+Wire Wire Line
+	4050 5450 4600 5450
+Text Label 4600 5450 2    50   ~ 0
+P5W
+$Comp
+L Connector:USB_B_Micro J4
+U 1 1 5BE2379A
+P 2200 2300
+F 0 "J4" H 2255 2767 50  0000 C CNN
+F 1 "USB_B_Micro" H 2255 2676 50  0000 C CNN
+F 2 "Connect:USB_Micro-B" H 2350 2250 50  0001 C CNN
+F 3 "~" H 2350 2250 50  0001 C CNN
+	1    2200 2300
+	1    0    0    -1  
+$EndComp
+NoConn ~ 2100 2700
+NoConn ~ 4050 5050
+NoConn ~ 4050 5150
+NoConn ~ 4050 5550
+NoConn ~ 4050 5650
+NoConn ~ 2850 4950
+NoConn ~ 2850 5050
+NoConn ~ 2850 4250
+NoConn ~ 2850 3750
+NoConn ~ 2850 3850
 $EndSCHEMATC
