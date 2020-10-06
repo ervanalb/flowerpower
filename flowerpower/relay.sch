@@ -75,7 +75,7 @@ AR Path="/5F96B8A3/5F974177" Ref="J15"  Part="1"
 AR Path="/5F982F80/5F974177" Ref="J16"  Part="1" 
 F 0 "J16" H 6730 3892 50  0000 L CNN
 F 1 "Switched" H 6730 3801 50  0000 L CNN
-F 2 "Terminal_Blocks:TerminalBlock_Pheonix_MPT-2.54mm_2pol" H 6650 3900 50  0001 C CNN
+F 2 "Terminal_Blocks:TerminalBlock_Pheonix_PT-3.5mm_2pol" H 6650 3900 50  0001 C CNN
 F 3 "~" H 6650 3900 50  0001 C CNN
 	1    6650 3900
 	1    0    0    -1  

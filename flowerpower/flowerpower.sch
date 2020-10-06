@@ -261,11 +261,6 @@ Text Label 4600 5750 2    50   ~ 0
 USB_DM
 Wire Wire Line
 	3450 6350 3450 6450
-Wire Wire Line
-	3350 3150 3450 3150
-Connection ~ 3450 3150
-Wire Wire Line
-	3450 3150 3550 3150
 Connection ~ 3550 3150
 Wire Wire Line
 	3550 3150 3650 3150
@@ -1568,17 +1563,6 @@ F 3 "" H 4500 7350 50  0001 C CNN
 	1    4500 7350
 	1    0    0    -1  
 $EndComp
-$Comp
-L MCU_ST_STM32F0:STM32F051C6Tx U4
-U 1 1 5F72889D
-P 3450 4750
-F 0 "U4" H 2800 3100 50  0000 C CNN
-F 1 "STM32F041C6Tx" H 3050 3000 50  0000 C CNN
-F 2 "Housings_QFP:LQFP-48_7x7mm_Pitch0.5mm" H 2950 3250 50  0001 R CNN
-F 3 "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00039193.pdf" H 3450 4750 50  0001 C CNN
-	1    3450 4750
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	2850 5450 2350 5450
 Wire Wire Line
@@ -1686,8 +1670,66 @@ NoConn ~ 4050 5150
 NoConn ~ 4050 5550
 NoConn ~ 4050 5650
 NoConn ~ 2850 4950
-NoConn ~ 2850 5050
 NoConn ~ 2850 4250
 NoConn ~ 2850 3750
 NoConn ~ 2850 3850
+$Comp
+L Device:R R28
+U 1 1 5F87DE46
+P 1300 6800
+F 0 "R28" H 1370 6846 50  0000 L CNN
+F 1 "470R" H 1370 6755 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 1230 6800 50  0001 C CNN
+F 3 "~" H 1300 6800 50  0001 C CNN
+	1    1300 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR01
+U 1 1 5F87DE50
+P 1300 7250
+F 0 "#PWR01" H 1300 7000 50  0001 C CNN
+F 1 "GND" H 1305 7077 50  0000 C CNN
+F 2 "" H 1300 7250 50  0001 C CNN
+F 3 "" H 1300 7250 50  0001 C CNN
+	1    1300 7250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:LED D26
+U 1 1 5F87DE5A
+P 1300 7100
+F 0 "D26" V 1338 6982 50  0000 R CNN
+F 1 "YELLOW" V 1247 6982 50  0000 R CNN
+F 2 "LEDs:LED_0603" H 1300 7100 50  0001 C CNN
+F 3 "~" H 1300 7100 50  0001 C CNN
+	1    1300 7100
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	1300 6650 1300 6500
+Wire Wire Line
+	1300 6500 1900 6500
+Text Label 1900 6500 2    50   ~ 0
+HEARTBEAT
+Wire Wire Line
+	3450 3150 3550 3150
+Wire Wire Line
+	3350 3150 3450 3150
+Connection ~ 3450 3150
+$Comp
+L MCU_ST_STM32F0:STM32F051C6Tx U4
+U 1 1 5F72889D
+P 3450 4750
+F 0 "U4" H 2800 3100 50  0000 C CNN
+F 1 "STM32F041C6Tx" H 3050 3000 50  0000 C CNN
+F 2 "Housings_QFP:LQFP-48_7x7mm_Pitch0.5mm" H 2950 3250 50  0001 R CNN
+F 3 "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00039193.pdf" H 3450 4750 50  0001 C CNN
+	1    3450 4750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2850 5050 2350 5050
+Text Label 2350 5050 0    50   ~ 0
+HEARTBEAT
 $EndSCHEMATC
