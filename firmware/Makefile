@@ -13,6 +13,8 @@ CFILES += FreeRTOS-Kernel/timers.c
 
 # Our files
 CFILES += src/main.c
+CFILES += src/hal.c
+CFILES += src/handlers.c
 
 OPT = -O1
 LDFLAGS += -Xlinker -Map=$(PROJECT).map
