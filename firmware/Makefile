@@ -4,7 +4,7 @@ BUILD_DIR = bin
 # FreeRTOS
 INCLUDES += -IFreeRTOS-Kernel/include
 INCLUDES += -IFreeRTOS-Kernel/portable/GCC/ARM_CM0
-CFILES += FreeRTOS-Kernel/portable/MemMang/heap_2.c
+CFILES += FreeRTOS-Kernel/portable/MemMang/heap_4.c
 CFILES += FreeRTOS-Kernel/portable/GCC/ARM_CM0/port.c
 CFILES += FreeRTOS-Kernel/list.c
 CFILES += FreeRTOS-Kernel/queue.c
@@ -13,6 +13,7 @@ CFILES += FreeRTOS-Kernel/timers.c
 
 # Our files
 CFILES += src/main.c
+CFILES += src/usb.c
 CFILES += src/hal.c
 CFILES += src/handlers.c
 
