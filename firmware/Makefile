@@ -17,7 +17,7 @@ CFILES += src/usb.c
 CFILES += src/hal.c
 CFILES += src/handlers.c
 
-OPT = -O1
+OPT = -O0
 LDFLAGS += -Xlinker -Map=$(PROJECT).map
 LDFLAGS += -ggdb3
 

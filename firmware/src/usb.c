@@ -7,6 +7,9 @@
 #include <task.h>
 #include "usb.h"
 
+// Index for TaskNotify calls
+#define NOTIFY_RX_DONE 0
+
 static usbd_device *usbd_dev_handle;
 static uint8_t usbd_control_buffer[128];
 
@@ -175,7 +178,6 @@ static uint8_t packet_rx_buffer[64];
 static void process_rx_buffer(BaseType_t *higher_priority_task_woken) {
     configASSERT(receive_buffer != NULL);
     configASSERT(receive_task != NULL);
-    configASSERT(receive_buffer_index < receive_max_length);
 
     size_t i;
     for (i = 0; i < packet_rx_size; i++) {
@@ -183,25 +185,31 @@ static void process_rx_buffer(BaseType_t *higher_priority_task_woken) {
         receive_buffer_index++;
 
         if (packet_rx_buffer[i] == '\n' || receive_buffer_index >= receive_max_length) {
-            for(size_t j = i + 1; j < packet_rx_size; j++) {
-                packet_rx_buffer[j - i - 1] = packet_rx_buffer[j];
-            }
-            packet_rx_size -= i + 1;
-            if (higher_priority_task_woken == NULL) {
-                xTaskNotifyGiveIndexed(receive_task,
-                                       receive_buffer_index);
-            } else {
-                vTaskNotifyGiveIndexedFromISR(receive_task,
-                                              receive_buffer_index,
-                                              higher_priority_task_woken);
-            }
-            receive_task = NULL;
             break;
         }
     }
-    if (i >= packet_rx_size) {
+    if (i < packet_rx_size) {
+        // We broke out, which means a packet is complete
+        for(size_t j = i + 1; j < packet_rx_size; j++) {
+            packet_rx_buffer[j - i - 1] = packet_rx_buffer[j];
+        }
+        packet_rx_size -= i + 1;
+
+        TaskHandle_t task_to_notify = receive_task;
+        receive_task = NULL;
+        receive_buffer = NULL;
+
+        if (higher_priority_task_woken == NULL) {
+            xTaskNotifyGiveIndexed(task_to_notify,
+                                   NOTIFY_RX_DONE);
+        } else {
+            vTaskNotifyGiveIndexedFromISR(task_to_notify,
+                                          NOTIFY_RX_DONE,
+                                          higher_priority_task_woken);
+        }
+    } else {
         // We didn't break out
-        // This means we're still short on data
+        // This means a packet is not complete and we should receive more.
         packet_rx_size = 0;
         usbd_ep_nak_set(usbd_dev_handle, 0x01, 0); // Stop NAKing
     }
@@ -224,7 +232,6 @@ static void protocol_rx(usbd_device *usbd_dev, uint8_t ep) {
 
 size_t usb_receive(void *buffer, size_t length) {
     configASSERT(buffer != NULL);
-    configASSERT(length >= 0);
     configASSERT(receive_buffer == NULL);
     configASSERT(receive_task == NULL);
 
@@ -235,8 +242,7 @@ size_t usb_receive(void *buffer, size_t length) {
 
     process_rx_buffer(NULL);
 
-    uint32_t result = ulTaskNotifyTakeIndexed(0, pdTRUE, portMAX_DELAY);
-    configASSERT(result == 0);
+    ulTaskNotifyTakeIndexed(0, pdTRUE, portMAX_DELAY);
     return receive_buffer_index;
 }
 
@@ -288,7 +294,6 @@ static void cdcacm_set_config(usbd_device *handle, uint16_t wValue) {
     usbd_ep_setup(usbd_dev_handle, 0x01, USB_ENDPOINT_ATTR_BULK, 64, protocol_rx);
     usbd_ep_setup(usbd_dev_handle, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
     usbd_ep_setup(usbd_dev_handle, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
-    usbd_ep_nak_set(usbd_dev_handle, 0x01, 1); // Not ready to receive
 
     usbd_register_control_callback(usbd_dev_handle,
                                    USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
