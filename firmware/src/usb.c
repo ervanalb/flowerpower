@@ -28,6 +28,9 @@ static size_t receive_buffer_index;
 static size_t receive_max_length;
 static TaskHandle_t receive_task = NULL;
 
+// Try to keep track of whether the device is disconnected or connected.
+static bool disconnected = true;
+
 static const struct usb_device_descriptor dev = {
   .bLength = USB_DT_DEVICE_SIZE,
   .bDescriptorType = USB_DT_DEVICE,
@@ -224,8 +227,12 @@ static size_t transmit_size;
 static size_t transmit_index;
 
 static void process_tx_buffer(BaseType_t *higher_priority_task_woken) {
-    configASSERT(transmit_buffer != NULL);
-    configASSERT(transmit_task != NULL);
+    if (transmit_buffer == NULL || transmit_task == NULL) {
+        // The previous call likely timed out.
+        // Mark the device as connected, but don't do anything.
+        disconnected = false;
+        return;
+    }
 
     if (transmit_done) {
         // We are done transmitting
@@ -303,10 +310,14 @@ size_t usb_receive(void *buffer, size_t length) {
     return receive_buffer_index;
 }
 
-void usb_transmit(const void *buffer, size_t length) {
+enum usb_transmit_result usb_transmit(const void *buffer, size_t length, TickType_t ticks_to_wait) {
     configASSERT(buffer != NULL);
     configASSERT(transmit_buffer == NULL);
     configASSERT(transmit_task == NULL);
+
+    if (disconnected) {
+        return USB_DISCONNECTED;
+    }
 
     transmit_task = xTaskGetCurrentTaskHandle();
     transmit_buffer = buffer;
@@ -315,7 +326,15 @@ void usb_transmit(const void *buffer, size_t length) {
     transmit_done = false;
     process_tx_buffer(NULL);
 
-    ulTaskNotifyTakeIndexed(NOTIFY_TX_DONE, pdTRUE, portMAX_DELAY);
+    int result = ulTaskNotifyTakeIndexed(NOTIFY_TX_DONE, pdTRUE, ticks_to_wait);
+    if (result == 0) {
+        // A TIMEOUT marks the device as disconnected.
+        disconnected = true;
+        transmit_task = NULL;
+        transmit_buffer = NULL;
+        return USB_TIMEOUT;
+    }
+    return USB_SUCCESS;
 }
 
 static enum usbd_request_return_codes cdcacm_control_request(
@@ -366,6 +385,8 @@ static void cdcacm_set_config(usbd_device *handle, uint16_t wValue) {
     usbd_ep_setup(usbd_dev_handle, 0x01, USB_ENDPOINT_ATTR_BULK, BULK_PACKET_SIZE, protocol_rx);
     usbd_ep_setup(usbd_dev_handle, 0x82, USB_ENDPOINT_ATTR_BULK, BULK_PACKET_SIZE, protocol_tx);
     usbd_ep_setup(usbd_dev_handle, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
+
+    disconnected = false;
 
     usbd_register_control_callback(usbd_dev_handle,
                                    USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
