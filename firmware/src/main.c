@@ -5,24 +5,17 @@
 #include <task.h>
 
 #include "hal.h"
-#include "usb.h"
+#include "comms.h"
 
-static void comms(void *pvParameters) {
-    (void)pvParameters;
-    static uint8_t buff[100];
-    for (;;) {
-        size_t rx_len = usb_receive(buff, 100);
-        usb_transmit(buff, rx_len);
-    }
-}
-
-static void blink(void *pvParameters) {
+static void heartbeat(void *pvParameters) {
     (void)pvParameters;
     for (;;) {
         gpio_set(GPIOB, GPIO4);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
+        comms_send("Blink On\n", 10);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
         gpio_clear(GPIOB, GPIO4);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
+        comms_send("Blink Off\n", 11);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -43,9 +36,10 @@ static void motor_move(void *pvParameters) {
 int main(void) {
     hal_init();
 
-    //xTaskCreate(blink, "b", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    xTaskCreate(comms, "c", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    xTaskCreate(motor_move, "m", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    comms_init();
+
+    xTaskCreate(heartbeat, "heartbeat", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(motor_move, "motor_move", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     vTaskStartScheduler();
 
     for (;;);

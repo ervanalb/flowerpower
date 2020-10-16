@@ -17,7 +17,7 @@ static usbd_device *usbd_dev_handle;
 static uint8_t usbd_control_buffer[128];
 
 // Variables for USB Transmission
-static void *transmit_buffer;
+static const void *transmit_buffer;
 static size_t transmit_buffer_index;
 static size_t transmit_length;
 static TaskHandle_t transmit_task = NULL;
@@ -277,6 +277,7 @@ static void protocol_rx(usbd_device *usbd_dev, uint8_t ep) {
 }
 
 static void protocol_tx(usbd_device *usbd_dev, uint8_t ep) {
+    (void)usbd_dev;
     (void)ep;
 
     BaseType_t higher_priority_task_woken = pdFALSE;
@@ -302,7 +303,7 @@ size_t usb_receive(void *buffer, size_t length) {
     return receive_buffer_index;
 }
 
-void usb_transmit(void *buffer, size_t length) {
+void usb_transmit(const void *buffer, size_t length) {
     configASSERT(buffer != NULL);
     configASSERT(transmit_buffer == NULL);
     configASSERT(transmit_task == NULL);

@@ -12,10 +12,11 @@ CFILES += FreeRTOS-Kernel/tasks.c
 CFILES += FreeRTOS-Kernel/timers.c
 
 # Our files
-CFILES += src/main.c
-CFILES += src/usb.c
+CFILES += src/comms.c
 CFILES += src/hal.c
 CFILES += src/handlers.c
+CFILES += src/main.c
+CFILES += src/usb.c
 
 OPT = -O0
 LDFLAGS += -Xlinker -Map=$(PROJECT).map
