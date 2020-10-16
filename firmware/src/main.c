@@ -12,10 +12,7 @@ static void comms(void *pvParameters) {
     static uint8_t buff[100];
     for (;;) {
         size_t rx_len = usb_receive(buff, 100);
-        
-        gpio_set(GPIOB, GPIO4);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
-        gpio_clear(GPIOB, GPIO4);
+        usb_transmit(buff, rx_len);
     }
 }
 

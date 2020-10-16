@@ -9,14 +9,18 @@
 
 // Index for TaskNotify calls
 #define NOTIFY_RX_DONE 0
+#define NOTIFY_TX_DONE 1
+
+#define BULK_PACKET_SIZE 64
 
 static usbd_device *usbd_dev_handle;
 static uint8_t usbd_control_buffer[128];
 
-// Variables for USB Sending
-static void *send_buffer;
-static void *send_length;
-static TaskHandle_t send_task = NULL;
+// Variables for USB Transmission
+static void *transmit_buffer;
+static size_t transmit_buffer_index;
+static size_t transmit_length;
+static TaskHandle_t transmit_task = NULL;
 
 // Variables for USB Receiving
 static void *receive_buffer;
@@ -31,7 +35,7 @@ static const struct usb_device_descriptor dev = {
   .bDeviceClass = USB_CLASS_CDC,
   .bDeviceSubClass = 0,
   .bDeviceProtocol = 0,
-  .bMaxPacketSize0 = 64,
+  .bMaxPacketSize0 = BULK_PACKET_SIZE,
   .idVendor = 0x0483,
   .idProduct = 0x5740,
   .bcdDevice = 0x0200,
@@ -63,7 +67,7 @@ static const struct usb_endpoint_descriptor data_endp[] = {
     .bDescriptorType = USB_DT_ENDPOINT,
     .bEndpointAddress = 0x01,
     .bmAttributes = USB_ENDPOINT_ATTR_BULK,
-    .wMaxPacketSize = 64,
+    .wMaxPacketSize = BULK_PACKET_SIZE,
     .bInterval = 1,
   },
   {
@@ -71,7 +75,7 @@ static const struct usb_endpoint_descriptor data_endp[] = {
     .bDescriptorType = USB_DT_ENDPOINT,
     .bEndpointAddress = 0x82,
     .bmAttributes = USB_ENDPOINT_ATTR_BULK,
-    .wMaxPacketSize = 64,
+    .wMaxPacketSize = BULK_PACKET_SIZE,
     .bInterval = 1,
   }
 };
@@ -173,7 +177,7 @@ static const char *usb_strings[] = {
 };
 
 static size_t packet_rx_size;
-static uint8_t packet_rx_buffer[64];
+static uint8_t packet_rx_buffer[BULK_PACKET_SIZE];
 
 static void process_rx_buffer(BaseType_t *higher_priority_task_woken) {
     configASSERT(receive_buffer != NULL);
@@ -215,17 +219,69 @@ static void process_rx_buffer(BaseType_t *higher_priority_task_woken) {
     }
 }
 
+static bool transmit_done;
+static size_t transmit_size;
+static size_t transmit_index;
+
+static void process_tx_buffer(BaseType_t *higher_priority_task_woken) {
+    configASSERT(transmit_buffer != NULL);
+    configASSERT(transmit_task != NULL);
+
+    if (transmit_done) {
+        // We are done transmitting
+        
+        TaskHandle_t task_to_notify = transmit_task;
+        transmit_task = NULL;
+        transmit_buffer = NULL;
+
+        if (higher_priority_task_woken == NULL) {
+            xTaskNotifyGiveIndexed(task_to_notify,
+                                   NOTIFY_TX_DONE);
+        } else {
+            vTaskNotifyGiveIndexedFromISR(task_to_notify,
+                                          NOTIFY_TX_DONE,
+                                          higher_priority_task_woken);
+        }
+    } else {
+        // This is a first packet, or a continuation
+
+        uint8_t *ptr = (uint8_t *)(&transmit_buffer)[transmit_index];
+        size_t size = transmit_size - transmit_index;
+        if (size > BULK_PACKET_SIZE) {
+            size = BULK_PACKET_SIZE;
+        }
+
+        usbd_ep_write_packet(usbd_dev_handle, 0x82, ptr, size);
+
+        transmit_index += size;
+
+        // We always send a ZLP if ending on a multiple of 64
+        // not sure if this is necessary
+        transmit_done = (size < BULK_PACKET_SIZE);
+    }
+}
+
 static void protocol_rx(usbd_device *usbd_dev, uint8_t ep) {
     (void)ep;
 
     configASSERT(packet_rx_size == 0);
 
     usbd_ep_nak_set(usbd_dev_handle, 0x01, 1); // Don't assume we can take more data
-    packet_rx_size = usbd_ep_read_packet(usbd_dev, 0x01, packet_rx_buffer, 64);
+    packet_rx_size = usbd_ep_read_packet(usbd_dev, 0x01, packet_rx_buffer, BULK_PACKET_SIZE);
 
     BaseType_t higher_priority_task_woken = pdFALSE;
 
     process_rx_buffer(&higher_priority_task_woken);
+
+    portYIELD_FROM_ISR(higher_priority_task_woken);
+}
+
+static void protocol_tx(usbd_device *usbd_dev, uint8_t ep) {
+    (void)ep;
+
+    BaseType_t higher_priority_task_woken = pdFALSE;
+
+    process_tx_buffer(&higher_priority_task_woken);
 
     portYIELD_FROM_ISR(higher_priority_task_woken);
 }
@@ -242,8 +298,23 @@ size_t usb_receive(void *buffer, size_t length) {
 
     process_rx_buffer(NULL);
 
-    ulTaskNotifyTakeIndexed(0, pdTRUE, portMAX_DELAY);
+    ulTaskNotifyTakeIndexed(NOTIFY_RX_DONE, pdTRUE, portMAX_DELAY);
     return receive_buffer_index;
+}
+
+void usb_transmit(void *buffer, size_t length) {
+    configASSERT(buffer != NULL);
+    configASSERT(transmit_buffer == NULL);
+    configASSERT(transmit_task == NULL);
+
+    transmit_task = xTaskGetCurrentTaskHandle();
+    transmit_buffer = buffer;
+    transmit_size = length;
+    transmit_index = 0;
+    transmit_done = false;
+    process_tx_buffer(NULL);
+
+    ulTaskNotifyTakeIndexed(NOTIFY_TX_DONE, pdTRUE, portMAX_DELAY);
 }
 
 static enum usbd_request_return_codes cdcacm_control_request(
@@ -291,8 +362,8 @@ static void cdcacm_set_config(usbd_device *handle, uint16_t wValue) {
     (void)wValue;
     (void)handle;
 
-    usbd_ep_setup(usbd_dev_handle, 0x01, USB_ENDPOINT_ATTR_BULK, 64, protocol_rx);
-    usbd_ep_setup(usbd_dev_handle, 0x82, USB_ENDPOINT_ATTR_BULK, 64, NULL);
+    usbd_ep_setup(usbd_dev_handle, 0x01, USB_ENDPOINT_ATTR_BULK, BULK_PACKET_SIZE, protocol_rx);
+    usbd_ep_setup(usbd_dev_handle, 0x82, USB_ENDPOINT_ATTR_BULK, BULK_PACKET_SIZE, protocol_tx);
     usbd_ep_setup(usbd_dev_handle, 0x83, USB_ENDPOINT_ATTR_INTERRUPT, 16, NULL);
 
     usbd_register_control_callback(usbd_dev_handle,
