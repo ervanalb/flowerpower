@@ -25,13 +25,13 @@ LDFLAGS += -ggdb3
 
 INCLUDES += -Isrc
 
-DEVICE=stm32f042c6t6
+DEVICE = stm32f042c6t6
+LDSCRIPT = stm32f042c6t6.ld
 
 OPENCM3_DIR=libopencm3
 
 include $(OPENCM3_DIR)/mk/genlink-config.mk
 include rules.mk
-include $(OPENCM3_DIR)/mk/genlink-rules.mk
 
 .PHONY: gdb load loadquit flash
 
