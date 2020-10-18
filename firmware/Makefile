@@ -15,6 +15,7 @@ CFILES += FreeRTOS-Kernel/timers.c
 CFILES += src/comms.c
 CFILES += src/hal.c
 CFILES += src/handlers.c
+CFILES += src/heartbeat.c
 CFILES += src/main.c
 CFILES += src/usb.c
 
