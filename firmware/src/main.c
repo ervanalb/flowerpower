@@ -48,7 +48,7 @@ int main(void) {
     //};
     //rtc_set(&dt);
 
-    //state_init();
+    state_init();
 
     //xTaskCreate(heartbeat, "heartbeat", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
     xTaskCreate(motor_move, "motor_move", configMINIMAL_STACK_SIZE, NULL, 1, NULL);

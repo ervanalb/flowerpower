@@ -10,7 +10,7 @@
 #include "usb.h"
 
 #define MAX_MSG_LEN 256
-#define TASK_STACK_SIZE 256 // 1K
+#define TASK_STACK_SIZE 64
 #define USB_SEND_TIMEOUT pdMS_TO_TICKS(100)
 
 SemaphoreHandle_t transmit_semaphore = NULL;
