@@ -3,45 +3,54 @@ ENTRY(reset_handler)
 MEMORY
 {
  ram (rwx) : ORIGIN = 0x20000000, LENGTH = 6K
- rom (rx) : ORIGIN = 0x08000000, LENGTH = 32K
+ vectors (rx) : ORIGIN = 0x08000000, LENGTH = 1K
+ config (r) : ORIGIN = 0x08000400, LENGTH = 1K
+ program (rx) : ORIGIN = 0x08000800, LENGTH = 30K
 }
 SECTIONS
 {
- .text : {
+ .vectors : {
   *(.vectors)
+  . = ALIGN(4);
+ } >vectors
+ .config : {
+  *(.config)
+  . = ALIGN(4);
+ } >config
+ .text : {
   *(.text*)
   . = ALIGN(4);
   *(.rodata*)
   . = ALIGN(4);
- } >rom
+ } >program
  .preinit_array : {
   . = ALIGN(4);
   __preinit_array_start = .;
   KEEP (*(.preinit_array))
   __preinit_array_end = .;
- } >rom
+ } >program
  .init_array : {
   . = ALIGN(4);
   __init_array_start = .;
   KEEP (*(SORT(.init_array.*)))
   KEEP (*(.init_array))
   __init_array_end = .;
- } >rom
+ } >program
  .fini_array : {
   . = ALIGN(4);
   __fini_array_start = .;
   KEEP (*(.fini_array))
   KEEP (*(SORT(.fini_array.*)))
   __fini_array_end = .;
- } >rom
+ } >program
  .ARM.extab : {
   *(.ARM.extab*)
- } >rom
+ } >program
  .ARM.exidx : {
   __exidx_start = .;
   *(.ARM.exidx*)
   __exidx_end = .;
- } >rom
+ } >program
  . = ALIGN(4);
  _etext = .;
  .data : {
@@ -49,7 +58,7 @@ SECTIONS
   *(.data*)
   . = ALIGN(4);
   _edata = .;
- } >ram AT >rom
+ } >ram AT >program
  _data_loadaddr = LOADADDR(.data);
  .bss : {
   *(.bss*)

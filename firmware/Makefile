@@ -17,6 +17,7 @@ CFILES += src/hal.c
 CFILES += src/handlers.c
 CFILES += src/heartbeat.c
 CFILES += src/main.c
+#CFILES += src/state.c
 CFILES += src/usb.c
 
 OPT = -O0
@@ -25,12 +26,13 @@ LDFLAGS += -ggdb3
 
 INCLUDES += -Isrc
 
-DEVICE = stm32f042c6t6
 LDSCRIPT = stm32f042c6t6.ld
+OPENCM3_DEFS=-DSTM32F0 -DSTM32F042C6T6 -D_ROM=32K -D_RAM=6K -D_ROM_OFF=0x08000000 -D_RAM_OFF=0x20000000
+OPENCM3_LIB=opencm3_stm32f0
+ARCH_FLAGS=-mcpu=cortex-m0 -mthumb -msoft-float
 
 OPENCM3_DIR=libopencm3
 
-include $(OPENCM3_DIR)/mk/genlink-config.mk
 include rules.mk
 
 .PHONY: gdb load loadquit flash

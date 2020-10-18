@@ -3,11 +3,17 @@
 #include <libopencm3/stm32/rtc.h>
 #include <libopencm3/stm32/pwr.h>
 #include <libopencm3/stm32/iwdg.h>
+#include <libopencm3/stm32/flash.h>
 
 #include <FreeRTOS.h>
 #include <task.h>
 #include "usb.h"
+#include "config.h"
 #include "hal.h"
+
+static struct config config_flash __attribute__((section(".config"))) = CONFIG_DEFAULTS;
+
+struct config config __attribute__((aligned(4)));
 
 void hal_time_set(const struct datetime *datetime) {
     uint32_t time_bcd = 0;
@@ -215,7 +221,7 @@ void hal_init() {
     rcc_periph_clock_enable(RCC_PWR);
 
     // Set up watchdog
-    iwdg_start();
+    //iwdg_start();
 
     // Heartbeat LED
     gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO4);
@@ -252,9 +258,33 @@ void hal_init() {
     rcc_enable_rtc_clock();
     pwr_enable_backup_domain_write_protect();
 
+    // Set up Config
+    config = config_flash;
+
+    // Set up USB
     usb_init();
 }
 
 void hal_watchdog_feed(void) {
     iwdg_reset();
+}
+
+void hal_update_config(void) {
+    taskDISABLE_INTERRUPTS();
+    flash_unlock();
+    flash_erase_page((uint32_t)&config_flash); // Assume it's only one page and is page-aligned
+    uint32_t flash_status = flash_get_status_flags();
+    configASSERT(flash_status == FLASH_SR_EOP)
+
+    for(size_t i = 0; i < sizeof (config); i+=4) {
+        // Program the word
+        flash_program_word((uint32_t)&config_flash + i, *((uint32_t*)(&config + i)));
+        flash_status = flash_get_status_flags();
+        configASSERT(flash_status == FLASH_SR_EOP);
+        // Verify word was correctly written
+        configASSERT(*((uint32_t*)(&config_flash + i)) == *((uint32_t*)(&config + i)));
+    }
+
+    flash_lock();
+    taskENABLE_INTERRUPTS();
 }

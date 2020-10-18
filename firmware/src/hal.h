@@ -1,5 +1,8 @@
 #pragma once
 
+#define N_POTS 5
+#define N_RELAYS 2
+
 struct datetime {
     uint8_t second;
     uint8_t minute;
@@ -9,9 +12,6 @@ struct datetime {
     uint8_t weekday;
     uint8_t year;
 };
-
-#define N_POTS 5
-#define N_RELAYS 2
 
 void hal_init(void);
 void hal_time_set(const struct datetime *datetime);
@@ -30,3 +30,5 @@ void hal_relay_on(uint8_t relay);
 void hal_relay_off(uint8_t relay);
 
 void hal_watchdog_feed(void);
+
+void hal_update_config(void);

@@ -1,11 +1,13 @@
+#include "comms.h"
+
 #include <FreeRTOS.h>
 #include <task.h>
 #include <semphr.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #include "hal.h"
 #include "usb.h"
-
-#include "comms.h"
 
 #define MAX_MSG_LEN 256
 #define TASK_STACK_SIZE 256 // 1K
@@ -46,6 +48,16 @@ void comms_send(const char *message, size_t length) {
     configASSERT(xSemaphoreTake(transmit_semaphore, portMAX_DELAY) == pdTRUE);
     usb_transmit(message, length, USB_SEND_TIMEOUT);
     xSemaphoreGive(transmit_semaphore);
+}
+
+void comms_printf(const char *fmt, ...) {
+    static char buffer[MAX_MSG_LEN];
+    va_list arg;
+    va_start(arg, fmt);
+    int n = vsnprintf(buffer, MAX_MSG_LEN, fmt, arg);
+    va_end(arg);
+    configASSERT(n >= 0 && n <= MAX_MSG_LEN);
+    comms_send(buffer, n);
 }
 
 static void on_receive(const char *message, size_t length) {
