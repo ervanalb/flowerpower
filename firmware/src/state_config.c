@@ -3,6 +3,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "comms.h"
 #include "hal.h"
@@ -32,16 +33,20 @@ static void publish_state_task(void *pvParameters) {
 
         for (int i=0; i<N_RELAYS; i++) {
             if (send_all || state.relay[i].state != last_state.relay[i].state) {
-                comms_printf("relay/%d/state %d\n", i + 1, state.relay[i].state);
+                comms_printf("/relay/%d/state %d\n", i + 1, state.relay[i].state);
+                last_state.relay[i].state = state.relay[i].state;
             }
             if (send_all || config.relay[i].mode != last_config.relay[i].mode) {
-                comms_printf("relay/%d/mode %s\n", i + 1, relay_mode_to_string(config.relay[i].mode));
+                comms_printf("/relay/%d/mode %s\n", i + 1, relay_mode_to_string(config.relay[i].mode));
+                last_config.relay[i].mode = config.relay[i].mode;
             }
             if (send_all || config.relay[i].on_hour != last_config.relay[i].on_hour) {
-                comms_printf("relay/%d/on/hour %d\n", i + 1, config.relay[i].on_hour);
+                comms_printf("/relay/%d/on/hour %d\n", i + 1, config.relay[i].on_hour);
+                last_config.relay[i].on_hour = config.relay[i].on_hour;
             }
             if (send_all || config.relay[i].off_hour != last_config.relay[i].off_hour) {
-                comms_printf("relay/%d/off/hour %d\n", i + 1, config.relay[i].off_hour);
+                comms_printf("/relay/%d/off/hour %d\n", i + 1, config.relay[i].off_hour);
+                last_config.relay[i].off_hour = config.relay[i].off_hour;
             }
         }
 
@@ -61,6 +66,24 @@ void state_init(void) {
 
 void state_update() {
     xTaskNotifyGiveIndexed(publish_state_task_handle, NOTIFY_UPDATE);
+}
+
+bool state_parse(const char *message, size_t length) {
+    {
+        int n;
+        int i;
+        int value;
+        int matched = sscanf(message, "/relay/%d/state/set %d\n%n", &i, &value, &n);
+        if (matched == 2 && n > 0 && (size_t)n == length) {
+            if (i > 0 && i <= N_RELAYS && value >= 0 && value <= 1) {
+                state.relay[i - 1].state = value;
+                // relay_update();
+                state_update();
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 static const char *relay_mode_to_string(uint8_t mode) {

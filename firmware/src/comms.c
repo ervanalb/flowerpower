@@ -8,9 +8,10 @@
 
 #include "hal.h"
 #include "usb.h"
+#include "state_config.h"
 
 #define MAX_MSG_LEN 256
-#define TASK_STACK_SIZE 64
+#define TASK_STACK_SIZE 260
 #define USB_SEND_TIMEOUT pdMS_TO_TICKS(100)
 
 SemaphoreHandle_t transmit_semaphore = NULL;
@@ -26,7 +27,9 @@ static void receive_task(void *pvParameters) {
         // Right now this is just USB receive.
         // But we may need to create a receive queue if there are multiple sources in the future.
         size_t rx_len = usb_receive(rx_buf, MAX_MSG_LEN);
-        if (rx_buf[rx_len] == '\n') {
+        // rx_len == MAX_MSG_LEN is invalid because there wasn't room for the NULL terminator,
+        // which is requried by some receive functions (like sscanf)
+        if (rx_len < MAX_MSG_LEN || rx_buf[rx_len - 1] == '\n') {
             if (!invalid) {
                 on_receive(rx_buf, rx_len);
             }
@@ -61,4 +64,5 @@ void comms_printf(const char *fmt, ...) {
 }
 
 static void on_receive(const char *message, size_t length) {
+    state_parse(message, length);
 }

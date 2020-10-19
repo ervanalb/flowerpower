@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 #define RELAY_MODE_RAW 0
 #define RELAY_MODE_SCHEDULE 1
@@ -35,3 +37,6 @@ extern struct config config; // Defined by HAL
 
 void state_init(void);
 void state_update(void);
+
+// Attempt to handle the given message. Return True if handled
+bool state_parse(const char *message, size_t length);

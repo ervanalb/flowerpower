@@ -308,6 +308,10 @@ size_t usb_receive(void *buffer, size_t length) {
     process_rx_buffer(NULL);
 
     ulTaskNotifyTakeIndexed(NOTIFY_RX_DONE, pdTRUE, portMAX_DELAY);
+    // Null-terminate if there is space
+    if (receive_buffer_index < length) {
+        ((char *)buffer)[receive_buffer_index] = '\0';
+    }
     return receive_buffer_index;
 }
 
