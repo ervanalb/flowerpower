@@ -17,7 +17,7 @@ CFILES += src/hal.c
 CFILES += src/handlers.c
 CFILES += src/heartbeat.c
 CFILES += src/main.c
-CFILES += src/state.c
+CFILES += src/state_config.c
 CFILES += src/usb.c
 
 OPT = -O0

@@ -8,7 +8,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include "usb.h"
-#include "config.h"
+#include "state_config.h"
 #include "hal.h"
 
 static struct config config_flash __attribute__((section(".config"))) = CONFIG_DEFAULTS;

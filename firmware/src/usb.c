@@ -6,6 +6,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include "usb.h"
+#include "state_config.h"
 
 // Index for TaskNotify calls
 #define NOTIFY_RX_DONE 0
@@ -161,7 +162,7 @@ static const struct usb_interface ifaces[] = {
   }
 };
 
-static const struct usb_config_descriptor config = {
+static const struct usb_config_descriptor usb_config = {
   .bLength = USB_DT_CONFIGURATION_SIZE,
   .bDescriptorType = USB_DT_CONFIGURATION,
   .wTotalLength = 0,
@@ -399,7 +400,7 @@ void usb_init(void) {
 
     usbd_dev_handle = usbd_init(&st_usbfs_v2_usb_driver,
                &dev,
-               &config,
+               &usb_config,
                usb_strings,
                3,
                usbd_control_buffer,

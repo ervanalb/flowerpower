@@ -8,7 +8,7 @@
 #include "hal.h"
 #include "comms.h"
 #include "heartbeat.h"
-#include "state.h"
+#include "state_config.h"
 
 static char clock_str[30];
 
