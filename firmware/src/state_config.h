@@ -9,16 +9,19 @@
 
 struct state_relay {
     uint8_t state;
+    uint8_t mode;
+    uint8_t on_hour;
+    uint8_t off_hour;
 };
-
-#define STATE_DEFAULTS {\
-}
 
 struct state {
     struct state_relay relay[2];
 };
 
 extern struct state state;
+
+#define STATE_DEFAULTS {\
+}
 
 struct config_relay {
     uint8_t mode;
@@ -30,10 +33,10 @@ struct config {
     struct config_relay relay[2];
 };
 
-#define CONFIG_DEFAULTS { \
-}
-
 extern struct config config; // Defined by HAL
+
+#define CONFIG_DEFAULTS {\
+}
 
 void state_init(void);
 void state_update(void);

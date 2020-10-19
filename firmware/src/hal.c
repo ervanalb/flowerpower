@@ -7,6 +7,9 @@
 
 #include <FreeRTOS.h>
 #include <task.h>
+
+#include <string.h>
+
 #include "usb.h"
 #include "state_config.h"
 #include "hal.h"
@@ -270,6 +273,11 @@ void hal_watchdog_feed(void) {
 }
 
 void hal_update_config(void) {
+    if (memcmp(&config_flash, &config, sizeof (config) ) == 0) {
+        // No write is required today
+        return;
+    }
+
     taskDISABLE_INTERRUPTS();
     flash_unlock();
     flash_erase_page((uint32_t)&config_flash); // Assume it's only one page and is page-aligned
@@ -278,11 +286,11 @@ void hal_update_config(void) {
 
     for(size_t i = 0; i < sizeof (config); i+=4) {
         // Program the word
-        flash_program_word((uint32_t)&config_flash + i, *((uint32_t*)(&config + i)));
+        flash_program_word((uint32_t)&config_flash + i, *((uint32_t*)((uint32_t)&config + i)));
         flash_status = flash_get_status_flags();
         configASSERT(flash_status == FLASH_SR_EOP);
         // Verify word was correctly written
-        configASSERT(*((uint32_t*)(&config_flash + i)) == *((uint32_t*)(&config + i)));
+        configASSERT(*((uint32_t*)((uint32_t)&config_flash + i)) == *((uint32_t*)((uint32_t)&config + i)));
     }
 
     flash_lock();

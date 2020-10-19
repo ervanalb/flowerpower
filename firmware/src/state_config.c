@@ -18,15 +18,41 @@ static TaskHandle_t publish_state_task_handle;
 
 static const char *relay_mode_to_string(uint8_t mode);
 
+// This semaphore is probably not required when preemption = 0
+// but might as well be a little extra safe
+// (or if we ever want to turn on preemption)
 static SemaphoreHandle_t state_semaphore = NULL;
 
 static struct state last_state;
-static struct config last_config;
+
+static void load_state_from_config(void) {
+    state_semaphore_take();
+    for (int i=0; i<N_RELAYS; i++) {
+        state.relay[i].mode = config.relay[i].mode;
+        state.relay[i].on_hour = config.relay[i].on_hour;
+        state.relay[i].off_hour = config.relay[i].off_hour;
+    }
+    state_semaphore_give();
+}
+
+static void maybe_write_config(void) {
+    state_semaphore_take();
+    for (int i=0; i<N_RELAYS; i++) {
+        config.relay[i].mode = state.relay[i].mode;
+        config.relay[i].on_hour = state.relay[i].on_hour;
+        config.relay[i].off_hour = state.relay[i].off_hour;
+    }
+    state_semaphore_give();
+    // This function will only issue a flash write if there have been changes.
+    hal_update_config();
+}
 
 static void publish_state_task(void *pvParameters) {
     (void)pvParameters;
 
     const TickType_t publish_period = pdMS_TO_TICKS(10000);
+
+    load_state_from_config();
 
     TickType_t last_send_all = 0;
 
@@ -43,17 +69,17 @@ static void publish_state_task(void *pvParameters) {
                 comms_printf("/relay/%d/state %d\n", i + 1, state.relay[i].state);
                 last_state.relay[i].state = state.relay[i].state;
             }
-            if (send_all || config.relay[i].mode != last_config.relay[i].mode) {
-                comms_printf("/relay/%d/mode %s\n", i + 1, relay_mode_to_string(config.relay[i].mode));
-                last_config.relay[i].mode = config.relay[i].mode;
+            if (send_all || state.relay[i].mode != last_state.relay[i].mode) {
+                comms_printf("/relay/%d/mode %s\n", i + 1, relay_mode_to_string(state.relay[i].mode));
+                last_state.relay[i].mode = state.relay[i].mode;
             }
-            if (send_all || config.relay[i].on_hour != last_config.relay[i].on_hour) {
-                comms_printf("/relay/%d/on/hour %d\n", i + 1, config.relay[i].on_hour);
-                last_config.relay[i].on_hour = config.relay[i].on_hour;
+            if (send_all || state.relay[i].on_hour != last_state.relay[i].on_hour) {
+                comms_printf("/relay/%d/on/hour %d\n", i + 1, state.relay[i].on_hour);
+                last_state.relay[i].on_hour = state.relay[i].on_hour;
             }
-            if (send_all || config.relay[i].off_hour != last_config.relay[i].off_hour) {
-                comms_printf("/relay/%d/off/hour %d\n", i + 1, config.relay[i].off_hour);
-                last_config.relay[i].off_hour = config.relay[i].off_hour;
+            if (send_all || state.relay[i].off_hour != last_state.relay[i].off_hour) {
+                comms_printf("/relay/%d/off/hour %d\n", i + 1, state.relay[i].off_hour);
+                last_state.relay[i].off_hour = state.relay[i].off_hour;
             }
         }
 
@@ -72,6 +98,9 @@ static void publish_state_task(void *pvParameters) {
 
             last_send_all = xTaskGetTickCount();
             elapsed_time = 0;
+
+            // Only write config every 10 seconds or so.
+            maybe_write_config();
         }
 
         TickType_t wait_time = publish_period - elapsed_time;
@@ -96,15 +125,15 @@ void state_update() {
             updated = true;
             break;
         }
-        if (config.relay[i].mode != last_config.relay[i].mode) {
+        if (state.relay[i].mode != last_state.relay[i].mode) {
             updated = true;
             break;
         }
-        if (config.relay[i].on_hour != last_config.relay[i].on_hour) {
+        if (state.relay[i].on_hour != last_state.relay[i].on_hour) {
             updated = true;
             break;
         }
-        if (config.relay[i].off_hour != last_config.relay[i].off_hour) {
+        if (state.relay[i].off_hour != last_state.relay[i].off_hour) {
             updated = true;
             break;
         }
@@ -125,7 +154,25 @@ bool state_parse(const char *message, size_t length) {
         int matched = sscanf(message, "/relay/%d/state/set %d\n%n", &i, &value, &n);
         if (matched == 2 && n > 0 && (size_t)n == length) {
             if (i > 0 && i <= N_RELAYS && value >= 0 && value <= 1) {
+                state_semaphore_take();
                 state.relay[i - 1].state = value;
+                state.relay[i - 1].mode = RELAY_MODE_RAW;
+                state_semaphore_give();
+                state_update();
+            }
+            return true;
+        }
+    }
+    {
+        int n;
+        int i;
+        int value;
+        int matched = sscanf(message, "/relay/%d/mode/set %d\n%n", &i, &value, &n);
+        if (matched == 2 && n > 0 && (size_t)n == length) {
+            if (i > 0 && i <= N_RELAYS && value >= 0 && value <= 1) {
+                state_semaphore_take();
+                state.relay[i - 1].mode = value;
+                state_semaphore_give();
                 state_update();
             }
             return true;
