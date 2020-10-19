@@ -14,7 +14,7 @@
 #define TASK_STACK_SIZE 260
 #define USB_SEND_TIMEOUT pdMS_TO_TICKS(100)
 
-SemaphoreHandle_t transmit_semaphore = NULL;
+static SemaphoreHandle_t transmit_semaphore = NULL;
 
 static void on_receive(const char *message, size_t length);
 

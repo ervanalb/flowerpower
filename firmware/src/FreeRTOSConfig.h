@@ -84,7 +84,7 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelayUntil         1
 #define INCLUDE_vTaskDelay              1
 
-#define configTASK_NOTIFICATION_ARRAY_ENTRIES 16
+#define configTASK_NOTIFICATION_ARRAY_ENTRIES 3
 
 /* Normal assert() semantics without relying on the provision of an assert.h
 header file. */

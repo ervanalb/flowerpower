@@ -87,10 +87,10 @@ void hal_heartbeat_off(void) {
 void hal_relay_on(uint8_t relay) {
     switch (relay) {
         case 1:
-            gpio_set(GPIOA, GPIO4);
+            gpio_set(GPIOA, GPIO5);
             break;
         case 2:
-            gpio_set(GPIOA, GPIO5);
+            gpio_set(GPIOA, GPIO4);
             break;
         default:
             configASSERT(false);
@@ -100,10 +100,10 @@ void hal_relay_on(uint8_t relay) {
 void hal_relay_off(uint8_t relay) {
     switch (relay) {
         case 1:
-            gpio_clear(GPIOA, GPIO4);
+            gpio_clear(GPIOA, GPIO5);
             break;
         case 2:
-            gpio_clear(GPIOA, GPIO5);
+            gpio_clear(GPIOA, GPIO4);
             break;
         default:
             configASSERT(false);

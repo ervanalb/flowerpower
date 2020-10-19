@@ -2,6 +2,7 @@
 
 #include <FreeRTOS.h>
 #include <task.h>
+#include <semphr.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -17,19 +18,25 @@ static TaskHandle_t publish_state_task_handle;
 
 static const char *relay_mode_to_string(uint8_t mode);
 
+static SemaphoreHandle_t state_semaphore = NULL;
+
+static struct state last_state;
+static struct config last_config;
+
 static void publish_state_task(void *pvParameters) {
     (void)pvParameters;
-    static struct state last_state;
-    static struct config last_config;
+
+    const TickType_t publish_period = pdMS_TO_TICKS(10000);
+
+    TickType_t last_send_all = 0;
 
     int counter = 0;
     for (;;) {
         bool send_all = false;
-        counter++;
-        if (counter >= 100) {
-            counter = 0;
-            send_all = true;
-        }
+        TickType_t elapsed_time = xTaskGetTickCount() - last_send_all;
+        send_all = (elapsed_time > publish_period);
+
+        state_semaphore_take();
 
         for (int i=0; i<N_RELAYS; i++) {
             if (send_all || state.relay[i].state != last_state.relay[i].state) {
@@ -50,22 +57,64 @@ static void publish_state_task(void *pvParameters) {
             }
         }
 
+        state_semaphore_give();
+
         if (send_all) {
-            struct datetime dt;
-            hal_time_get(&dt);
-            comms_printf("time 20%02d-%02d-%02dT%02d:%02d:%02d\n", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+            {
+                struct datetime dt;
+                hal_time_get(&dt);
+                comms_printf("/time 20%02d-%02d-%02dT%02d:%02d:%02d\n", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+            }
+            {
+                long free_memory = xPortGetFreeHeapSize();
+                comms_printf("/sys/free_memory %ld\n", free_memory);
+            }
+
+            last_send_all = xTaskGetTickCount();
+            elapsed_time = 0;
         }
 
-        ulTaskNotifyTakeIndexed(NOTIFY_UPDATE, pdTRUE, 100 / portTICK_PERIOD_MS);
+        TickType_t wait_time = publish_period - elapsed_time;
+        configASSERT (wait_time <= publish_period);
+        ulTaskNotifyTakeIndexed(NOTIFY_UPDATE, pdTRUE, wait_time);
     }
 }
 
 void state_init(void) {
     configASSERT(xTaskCreate(publish_state_task, "publish_state", TASK_STACK_SIZE, NULL, 1, &publish_state_task_handle) == pdTRUE);
+    state_semaphore = xSemaphoreCreateMutex();
+    configASSERT(state_semaphore);
 }
 
 void state_update() {
-    xTaskNotifyGiveIndexed(publish_state_task_handle, NOTIFY_UPDATE);
+    bool updated = false;
+
+    state_semaphore_take();
+
+    for (size_t i=0; i<N_RELAYS; i++) {
+        if (state.relay[i].state != last_state.relay[i].state) {
+            updated = true;
+            break;
+        }
+        if (config.relay[i].mode != last_config.relay[i].mode) {
+            updated = true;
+            break;
+        }
+        if (config.relay[i].on_hour != last_config.relay[i].on_hour) {
+            updated = true;
+            break;
+        }
+        if (config.relay[i].off_hour != last_config.relay[i].off_hour) {
+            updated = true;
+            break;
+        }
+    }
+
+    state_semaphore_give();
+
+    if (updated) {
+        xTaskNotifyGiveIndexed(publish_state_task_handle, NOTIFY_UPDATE);
+    }
 }
 
 bool state_parse(const char *message, size_t length) {
@@ -77,7 +126,6 @@ bool state_parse(const char *message, size_t length) {
         if (matched == 2 && n > 0 && (size_t)n == length) {
             if (i > 0 && i <= N_RELAYS && value >= 0 && value <= 1) {
                 state.relay[i - 1].state = value;
-                // relay_update();
                 state_update();
             }
             return true;
@@ -95,4 +143,12 @@ static const char *relay_mode_to_string(uint8_t mode) {
         default:
             return "UNKNOWN";
     }
+}
+
+void state_semaphore_take(void) {
+    configASSERT(xSemaphoreTake(state_semaphore, portMAX_DELAY) == pdTRUE);
+}
+
+void state_semaphore_give(void) {
+    xSemaphoreGive(state_semaphore);
 }

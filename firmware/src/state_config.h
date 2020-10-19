@@ -37,6 +37,8 @@ extern struct config config; // Defined by HAL
 
 void state_init(void);
 void state_update(void);
+void state_semaphore_take(void);
+void state_semaphore_give(void);
 
 // Attempt to handle the given message. Return True if handled
 bool state_parse(const char *message, size_t length);
