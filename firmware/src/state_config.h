@@ -7,12 +7,27 @@
 #define RELAY_MODE_RAW 0
 #define RELAY_MODE_SCHEDULE 1
 
+#define DEFAULT_OUTPUT
+
+// relay_mode_to_string
+
+#define RELAY_DEF \
+RELAY_STATE(uint8_t, state, "state %d", DEFAULT_OUTPUT) \
+RELAY_CONFIG(uint8_t, mode, "mode %d", DEFAULT_OUTPUT) \
+RELAY_CONFIG(uint8_t, on_hour, "on/hour %d", DEFAULT_OUTPUT) \
+RELAY_CONFIG(uint8_t, off_hour, "off/hour %d", DEFAULT_OUTPUT) \
+
+#define RELAY_SET_DEF \
+RELAY_SET(state, "state/set %d", int, relay_set_state, &) \
+RELAY_SET(mode, "mode/set %8s", char[9], relay_set_mode, ) \
+
+#define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) typeof (TYPE) NAME;
+#define RELAY_CONFIG RELAY_STATE
 struct state_relay {
-    uint8_t state;
-    uint8_t mode;
-    uint8_t on_hour;
-    uint8_t off_hour;
+    RELAY_DEF
 };
+#undef RELAY_STATE
+#undef RELAY_CONFIG
 
 struct state {
     struct state_relay relay[2];
@@ -20,14 +35,16 @@ struct state {
 
 extern struct state state;
 
-#define STATE_DEFAULTS {\
+#define RELAY_DEFAULTS {\
 }
 
+#define RELAY_CONFIG(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) typeof (TYPE) NAME;
+#define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN)
 struct config_relay {
-    uint8_t mode;
-    uint8_t on_hour;
-    uint8_t off_hour;
+    RELAY_DEF
 };
+#undef RELAY_STATE
+#undef RELAY_CONFIG
 
 struct config {
     struct config_relay relay[2];

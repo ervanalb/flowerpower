@@ -5,18 +5,21 @@
 #include <semphr.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "comms.h"
 #include "hal.h"
 
-struct state state = STATE_DEFAULTS;
+struct state state = RELAY_DEFAULTS;
 
-#define TASK_STACK_SIZE 160
+#define TASK_STACK_SIZE 200
 #define NOTIFY_UPDATE 0
 
 static TaskHandle_t publish_state_task_handle;
 
 static const char *relay_mode_to_string(uint8_t mode);
+static void relay_set_state(size_t i, int value);
+static void relay_set_mode(size_t i, const char *value);
 
 // This semaphore is probably not required when preemption = 0
 // but might as well be a little extra safe
@@ -28,9 +31,11 @@ static struct state last_state;
 static void load_state_from_config(void) {
     state_semaphore_take();
     for (int i=0; i<N_RELAYS; i++) {
-        state.relay[i].mode = config.relay[i].mode;
-        state.relay[i].on_hour = config.relay[i].on_hour;
-        state.relay[i].off_hour = config.relay[i].off_hour;
+#define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN)
+#define RELAY_CONFIG(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) state.relay[i].NAME = config.relay[i].NAME;
+        RELAY_DEF
+#undef RELAY_STATE
+#undef RELAY_CONFIG
     }
     state_semaphore_give();
 }
@@ -38,9 +43,11 @@ static void load_state_from_config(void) {
 static void maybe_write_config(void) {
     state_semaphore_take();
     for (int i=0; i<N_RELAYS; i++) {
-        config.relay[i].mode = state.relay[i].mode;
-        config.relay[i].on_hour = state.relay[i].on_hour;
-        config.relay[i].off_hour = state.relay[i].off_hour;
+#define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN)
+#define RELAY_CONFIG(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) config.relay[i].NAME = state.relay[i].NAME;
+        RELAY_DEF
+#undef RELAY_STATE
+#undef RELAY_CONFIG
     }
     state_semaphore_give();
     // This function will only issue a flash write if there have been changes.
@@ -65,22 +72,15 @@ static void publish_state_task(void *pvParameters) {
         state_semaphore_take();
 
         for (int i=0; i<N_RELAYS; i++) {
-            if (send_all || state.relay[i].state != last_state.relay[i].state) {
-                comms_printf("/relay/%d/state %d\n", i + 1, state.relay[i].state);
-                last_state.relay[i].state = state.relay[i].state;
+#define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
+            if (send_all || state.relay[i].state != last_state.relay[i].state) { \
+                comms_printf("/relay/%d/" OUTPUT_FMT "\n", i + 1, OUTPUT_FN(state.relay[i].state)); \
+                last_state.relay[i].state = state.relay[i].state; \
             }
-            if (send_all || state.relay[i].mode != last_state.relay[i].mode) {
-                comms_printf("/relay/%d/mode %s\n", i + 1, relay_mode_to_string(state.relay[i].mode));
-                last_state.relay[i].mode = state.relay[i].mode;
-            }
-            if (send_all || state.relay[i].on_hour != last_state.relay[i].on_hour) {
-                comms_printf("/relay/%d/on/hour %d\n", i + 1, state.relay[i].on_hour);
-                last_state.relay[i].on_hour = state.relay[i].on_hour;
-            }
-            if (send_all || state.relay[i].off_hour != last_state.relay[i].off_hour) {
-                comms_printf("/relay/%d/off/hour %d\n", i + 1, state.relay[i].off_hour);
-                last_state.relay[i].off_hour = state.relay[i].off_hour;
-            }
+#define RELAY_CONFIG RELAY_STATE
+            RELAY_DEF
+#undef RELAY_STATE
+#undef RELAY_CONFIG
         }
 
         state_semaphore_give();
@@ -121,22 +121,15 @@ void state_update() {
     state_semaphore_take();
 
     for (size_t i=0; i<N_RELAYS; i++) {
-        if (state.relay[i].state != last_state.relay[i].state) {
-            updated = true;
-            break;
+#define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
+        if (state.relay[i].NAME != last_state.relay[i].NAME) { \
+            updated = true; \
+            break; \
         }
-        if (state.relay[i].mode != last_state.relay[i].mode) {
-            updated = true;
-            break;
-        }
-        if (state.relay[i].on_hour != last_state.relay[i].on_hour) {
-            updated = true;
-            break;
-        }
-        if (state.relay[i].off_hour != last_state.relay[i].off_hour) {
-            updated = true;
-            break;
-        }
+#define RELAY_CONFIG RELAY_STATE
+            RELAY_DEF
+#undef RELAY_STATE
+#undef RELAY_CONFIG
     }
 
     state_semaphore_give();
@@ -147,37 +140,24 @@ void state_update() {
 }
 
 bool state_parse(const char *message, size_t length) {
-    {
-        int n;
-        int i;
-        int value;
-        int matched = sscanf(message, "/relay/%d/state/set %d\n%n", &i, &value, &n);
-        if (matched == 2 && n > 0 && (size_t)n == length) {
-            if (i > 0 && i <= N_RELAYS && value >= 0 && value <= 1) {
-                state_semaphore_take();
-                state.relay[i - 1].state = value;
-                state.relay[i - 1].mode = RELAY_MODE_RAW;
-                state_semaphore_give();
-                state_update();
-            }
-            return true;
-        }
+#define RELAY_SET(NAME, INPUT_FMT, INPUT_TYPE, INPUT_FN, REF) \
+    { \
+        int n; \
+        int i; \
+        typeof (INPUT_TYPE) value; \
+        int matched = sscanf(message, "/relay/%d/" INPUT_FMT "\n%n", &i, REF value, &n); \
+        if (matched == 2 && n > 0 && (size_t)n == length) { \
+            if (i > 0 && i <= N_RELAYS) { \
+                state_semaphore_take(); \
+                INPUT_FN((size_t)i - 1, value); \
+                state_semaphore_give(); \
+                state_update(); \
+            } \
+            return true; \
+        } \
     }
-    {
-        int n;
-        int i;
-        int value;
-        int matched = sscanf(message, "/relay/%d/mode/set %d\n%n", &i, &value, &n);
-        if (matched == 2 && n > 0 && (size_t)n == length) {
-            if (i > 0 && i <= N_RELAYS && value >= 0 && value <= 1) {
-                state_semaphore_take();
-                state.relay[i - 1].mode = value;
-                state_semaphore_give();
-                state_update();
-            }
-            return true;
-        }
-    }
+            RELAY_SET_DEF
+#undef RELAY_SET
     return false;
 }
 
@@ -189,6 +169,21 @@ static const char *relay_mode_to_string(uint8_t mode) {
             return "SCHEDULE";
         default:
             return "UNKNOWN";
+    }
+}
+
+static void relay_set_state(size_t i, int value) {
+    if (value >= 0 && value <= 1) {
+        state.relay[i].state = value;
+        state.relay[i].mode = RELAY_MODE_RAW;
+    }
+}
+
+static void relay_set_mode(size_t i, const char *value) {
+    if (strcmp(value, "RAW") == 0) {
+        state.relay[i].mode = RELAY_MODE_RAW;
+    } else if (strcmp(value, "SCHEDULE") == 0) {
+        state.relay[i].mode = RELAY_MODE_SCHEDULE;
     }
 }
 

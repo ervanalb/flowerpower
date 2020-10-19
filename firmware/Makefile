@@ -21,6 +21,7 @@ CFILES += src/main.c
 CFILES += src/state_config.c
 CFILES += src/usb.c
 
+CSTD = -std=gnu99
 OPT = -O1
 LDFLAGS += -Xlinker -Map=$(PROJECT).map
 LDFLAGS += -ggdb3
