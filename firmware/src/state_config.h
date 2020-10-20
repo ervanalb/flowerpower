@@ -11,8 +11,6 @@
 
 #define DEFAULT_OUTPUT
 
-// relay_mode_to_string
-
 #define GLOBAL_DEF \
 GLOBAL_STATE(uint8_t, overflow, "overflow %d", DEFAULT_OUTPUT) \
 
@@ -27,12 +25,19 @@ RELAY_CONFIG(uint8_t, off_hour, "off/hour %d", DEFAULT_OUTPUT) \
 #define RELAY_SET_DEF \
 RELAY_SET(state, "state/set %d", int, relay_set_state, &) \
 RELAY_SET(mode, "mode/set %8s", char[9], relay_set_mode, ) \
-RELAY_SET(on_hour, "on/hour/set %d", int, relay_set_on_hour, &) \
-RELAY_SET(off_hour, "off/hour/set %d", int, relay_set_off_hour, &) \
+RELAY_SET(on_hour, "on_hour/set %d", int, relay_set_on_hour, &) \
+RELAY_SET(off_hour, "off_hour/set %d", int, relay_set_off_hour, &) \
 
 #define POT_DEF \
 POT_STATE(int8_t, pump, "pump %d", DEFAULT_OUTPUT) \
 POT_STATE(int8_t, sense, "sense %d", DEFAULT_OUTPUT) \
+POT_CONFIG(int16_t, flow_rate, "flow_rate %d", DEFAULT_OUTPUT) \
+POT_CONFIG(int16_t, max_container, "max_container %d", DEFAULT_OUTPUT) \
+POT_CONFIG(int16_t, max_extra_flood, "max_extra_flood %d", DEFAULT_OUTPUT) \
+POT_CONFIG(int16_t, max_extra_drain, "max_extra_drain %d", DEFAULT_OUTPUT) \
+POT_STATE(int16_t, fluid_estimate, "fluid_estimate %d", DEFAULT_OUTPUT) \
+POT_STATE(int16_t, container_estimate, "container_estimate %d", DEFAULT_OUTPUT) \
+POT_STATE(int16_t, setpoint, "setpoint %d", DEFAULT_OUTPUT) \
 
 #define POT_SET_DEF \
 POT_SET(pump, "pump/set %d", int, pump_set, &) \
@@ -89,7 +94,7 @@ struct config_pot {
 struct config {
     GLOBAL_DEF
     struct config_relay relay[N_RELAYS];
-    struct config_relay pot[N_POTS];
+    struct config_pot pot[N_POTS];
 };
 #undef GLOBAL_STATE
 #undef GLOBAL_CONFIG

@@ -138,6 +138,10 @@ static void publish_state_task(void *pvParameters) {
                 hal_time_get(&dt);
                 comms_printf("/time 20%02d-%02d-%02dT%02d:%02d:%02d\n", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
             }
+
+            comms_printf("/sys/n_relays %d\n", N_RELAYS);
+            comms_printf("/sys/n_pots %d\n", N_POTS);
+
             {
                 long free_memory = xPortGetFreeHeapSize();
                 comms_printf("/sys/free_memory %ld\n", free_memory);
