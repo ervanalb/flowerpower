@@ -9,8 +9,6 @@
 
 #define TASK_STACK_SIZE 100
 
-static void toggle(void);
-
 static void relays_schedule(void) {
     struct datetime dt;
     hal_time_get(&dt);
@@ -42,11 +40,33 @@ static void relays(void) {
     }
 }
 
+static void pots(void) {
+    state.overflow = hal_sense_overflow();
+    for (size_t i = 0; i < N_POTS; i++) {
+        state.pot[i].sense = hal_sense_full(i + 1);
+        if (state.pot[i].sense && state.pot[i].pump > 0) {
+            state.pot[i].pump = 0;
+        }
+        if (state.overflow) {
+            state.pot[i].pump = 0;
+        }
+        if (state.pot[i].pump == 1) {
+            hal_pump_flood(i + 1);
+        } else if (state.pot[i].pump == -1) {
+            hal_pump_drain(i + 1);
+        } else {
+            hal_pump_off(i + 1);
+        }
+    }
+}
+
 static void control_loop(void *pvParameters) {
     (void)pvParameters;
     for (;;) {
         relays_schedule();
         relays();
+
+        pots();
 
         state_update();
 

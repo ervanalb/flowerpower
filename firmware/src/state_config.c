@@ -10,7 +10,7 @@
 #include "comms.h"
 #include "hal.h"
 
-struct state state = RELAY_DEFAULTS;
+struct state state;
 
 extern struct config config; // Defined by HAL
 
@@ -24,6 +24,7 @@ static void relay_set_state(size_t i, int value);
 static void relay_set_mode(size_t i, const char *value);
 static void relay_set_on_hour(size_t i, int value);
 static void relay_set_off_hour(size_t i, int value);
+static void pump_set(size_t i, int value);
 
 // This semaphore is probably not required when preemption = 0
 // but might as well be a little extra safe
@@ -41,17 +42,38 @@ static void load_state_from_config(void) {
 #undef RELAY_STATE
 #undef RELAY_CONFIG
     }
+    for (int i=0; i<N_POTS; i++) {
+#define POT_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN)
+#define POT_CONFIG(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) state.pot[i].NAME = config.pot[i].NAME;
+        POT_DEF
+#undef POT_STATE
+#undef POT_CONFIG
+    }
     state_semaphore_give();
 }
 
 static void maybe_write_config(void) {
     state_semaphore_take();
+
+#define GLOBAL_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN)
+#define GLOBAL_CONFIG(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) config.NAME = state.NAME;
+        GLOBAL_DEF
+#undef GLOBAL_STATE
+#undef GLOBAL_CONFIG
+
     for (int i=0; i<N_RELAYS; i++) {
 #define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN)
 #define RELAY_CONFIG(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) config.relay[i].NAME = state.relay[i].NAME;
         RELAY_DEF
 #undef RELAY_STATE
 #undef RELAY_CONFIG
+    }
+    for (int i=0; i<N_POTS; i++) {
+#define POT_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN)
+#define POT_CONFIG(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) config.pot[i].NAME = state.pot[i].NAME;
+        POT_DEF
+#undef POT_STATE
+#undef POT_CONFIG
     }
     state_semaphore_give();
     // This function will only issue a flash write if there have been changes.
@@ -75,6 +97,16 @@ static void publish_state_task(void *pvParameters) {
 
         state_semaphore_take();
 
+#define GLOBAL_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
+            if (send_all || state.NAME != last_state.NAME) { \
+                comms_printf("/" OUTPUT_FMT "\n", OUTPUT_FN(state.NAME)); \
+                last_state.NAME = state.NAME; \
+            }
+#define GLOBAL_CONFIG GLOBAL_STATE
+            GLOBAL_DEF
+#undef GLOBAL_STATE
+#undef GLOBAL_CONFIG
+
         for (int i=0; i<N_RELAYS; i++) {
 #define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
             if (send_all || state.relay[i].NAME != last_state.relay[i].NAME) { \
@@ -85,6 +117,17 @@ static void publish_state_task(void *pvParameters) {
             RELAY_DEF
 #undef RELAY_STATE
 #undef RELAY_CONFIG
+        }
+        for (int i=0; i<N_POTS; i++) {
+#define POT_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
+            if (send_all || state.pot[i].NAME != last_state.pot[i].NAME) { \
+                comms_printf("/pot/%d/" OUTPUT_FMT "\n", i + 1, OUTPUT_FN(state.pot[i].NAME)); \
+                last_state.pot[i].NAME = state.pot[i].NAME; \
+            }
+#define POT_CONFIG POT_STATE
+            POT_DEF
+#undef POT_STATE
+#undef POT_CONFIG
         }
 
         state_semaphore_give();
@@ -124,18 +167,40 @@ void state_update() {
 
     state_semaphore_take();
 
+#define GLOBAL_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
+        if (state.NAME != last_state.NAME) { \
+            updated = true; \
+            goto done; \
+        }
+#define GLOBAL_CONFIG GLOBAL_STATE
+            GLOBAL_DEF
+#undef GLOBAL_STATE
+#undef GLOBAL_CONFIG
+
     for (size_t i=0; i<N_RELAYS; i++) {
 #define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
         if (state.relay[i].NAME != last_state.relay[i].NAME) { \
             updated = true; \
-            break; \
+            goto done; \
         }
 #define RELAY_CONFIG RELAY_STATE
             RELAY_DEF
 #undef RELAY_STATE
 #undef RELAY_CONFIG
     }
+    for (size_t i=0; i<N_POTS; i++) {
+#define POT_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
+        if (state.pot[i].NAME != last_state.pot[i].NAME) { \
+            updated = true; \
+            goto done; \
+        }
+#define POT_CONFIG POT_STATE
+            POT_DEF
+#undef POT_STATE
+#undef POT_CONFIG
+    }
 
+done:
     state_semaphore_give();
 
     if (updated) {
@@ -144,6 +209,21 @@ void state_update() {
 }
 
 bool state_parse(const char *message, size_t length) {
+#define GLOBAL_SET(NAME, INPUT_FMT, INPUT_TYPE, INPUT_FN, REF) \
+    { \
+        int n; \
+        typeof (INPUT_TYPE) value; \
+        int matched = sscanf(message, "/" INPUT_FMT "\n%n", REF value, &n); \
+        if (matched == 1 && n > 0 && (size_t)n == length) { \
+            state_semaphore_take(); \
+            INPUT_FN(value); \
+            state_semaphore_give(); \
+            return true; \
+        } \
+    }
+            GLOBAL_SET_DEF
+#undef GLOBAL_SET
+
 #define RELAY_SET(NAME, INPUT_FMT, INPUT_TYPE, INPUT_FN, REF) \
     { \
         int n; \
@@ -155,13 +235,30 @@ bool state_parse(const char *message, size_t length) {
                 state_semaphore_take(); \
                 INPUT_FN((size_t)i - 1, value); \
                 state_semaphore_give(); \
-                state_update(); \
             } \
             return true; \
         } \
     }
             RELAY_SET_DEF
 #undef RELAY_SET
+
+#define POT_SET(NAME, INPUT_FMT, INPUT_TYPE, INPUT_FN, REF) \
+    { \
+        int n; \
+        int i; \
+        typeof (INPUT_TYPE) value; \
+        int matched = sscanf(message, "/pot/%d/" INPUT_FMT "\n%n", &i, REF value, &n); \
+        if (matched == 2 && n > 0 && (size_t)n == length) { \
+            if (i > 0 && i <= N_POTS) { \
+                state_semaphore_take(); \
+                INPUT_FN((size_t)i - 1, value); \
+                state_semaphore_give(); \
+            } \
+            return true; \
+        } \
+    }
+            POT_SET_DEF
+#undef POT_SET
 
     {
         int n;
@@ -192,7 +289,6 @@ bool state_parse(const char *message, size_t length) {
                 hal_time_set(&dt);
             }
             state_semaphore_give();
-            state_update();
             return true;
         }
     }
@@ -234,6 +330,12 @@ static void relay_set_on_hour(size_t i, int value) {
 static void relay_set_off_hour(size_t i, int value) {
     if (value >= 0 && value <= 23) {
         state.relay[i].off_hour = value;
+    }
+}
+
+static void pump_set(size_t i, int value) {
+    if (value >= -1 && value <= 1) {
+        state.pot[i].pump = value;
     }
 }
 
