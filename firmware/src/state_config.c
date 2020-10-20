@@ -12,7 +12,9 @@
 
 struct state state = RELAY_DEFAULTS;
 
-#define TASK_STACK_SIZE 200
+extern struct config config; // Defined by HAL
+
+#define TASK_STACK_SIZE 160
 #define NOTIFY_UPDATE 0
 
 static TaskHandle_t publish_state_task_handle;
@@ -20,6 +22,8 @@ static TaskHandle_t publish_state_task_handle;
 static const char *relay_mode_to_string(uint8_t mode);
 static void relay_set_state(size_t i, int value);
 static void relay_set_mode(size_t i, const char *value);
+static void relay_set_on_hour(size_t i, int value);
+static void relay_set_off_hour(size_t i, int value);
 
 // This semaphore is probably not required when preemption = 0
 // but might as well be a little extra safe
@@ -73,9 +77,9 @@ static void publish_state_task(void *pvParameters) {
 
         for (int i=0; i<N_RELAYS; i++) {
 #define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) \
-            if (send_all || state.relay[i].state != last_state.relay[i].state) { \
-                comms_printf("/relay/%d/" OUTPUT_FMT "\n", i + 1, OUTPUT_FN(state.relay[i].state)); \
-                last_state.relay[i].state = state.relay[i].state; \
+            if (send_all || state.relay[i].NAME != last_state.relay[i].NAME) { \
+                comms_printf("/relay/%d/" OUTPUT_FMT "\n", i + 1, OUTPUT_FN(state.relay[i].NAME)); \
+                last_state.relay[i].NAME = state.relay[i].NAME; \
             }
 #define RELAY_CONFIG RELAY_STATE
             RELAY_DEF
@@ -158,6 +162,40 @@ bool state_parse(const char *message, size_t length) {
     }
             RELAY_SET_DEF
 #undef RELAY_SET
+
+    {
+        int n;
+        int year;
+        int month;
+        int day;
+        int hour;
+        int minute;
+        int second;
+        int matched = sscanf(message, "/time/set 20%02d-%02d-%02dT%02d:%02d:%02d\n%n", &year, &month, &day, &hour, &minute, &second, &n);
+
+        if (matched == 6 && n > 0 && (size_t)n == length) {
+            state_semaphore_take();
+            if (year >= 0 && year <= 99
+             && month >= 1 && month <= 12
+             && day >= 1 && day <= 31
+             && hour >= 0 && hour <= 23
+             && minute >= 0 && minute <= 59
+             && second >= 0 && second <= 59) {
+                struct datetime dt;
+                dt.year = year;
+                dt.month = month;
+                dt.day = day;
+                dt.hour = hour;
+                dt.minute = minute;
+                dt.second = second;
+                dt.weekday = 0;
+                hal_time_set(&dt);
+            }
+            state_semaphore_give();
+            state_update();
+            return true;
+        }
+    }
     return false;
 }
 
@@ -184,6 +222,18 @@ static void relay_set_mode(size_t i, const char *value) {
         state.relay[i].mode = RELAY_MODE_RAW;
     } else if (strcmp(value, "SCHEDULE") == 0) {
         state.relay[i].mode = RELAY_MODE_SCHEDULE;
+    }
+}
+
+static void relay_set_on_hour(size_t i, int value) {
+    if (value >= 0 && value <= 23) {
+        state.relay[i].on_hour = value;
+    }
+}
+
+static void relay_set_off_hour(size_t i, int value) {
+    if (value >= 0 && value <= 23) {
+        state.relay[i].off_hour = value;
     }
 }
 

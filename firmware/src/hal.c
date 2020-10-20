@@ -224,7 +224,9 @@ void hal_init() {
     rcc_periph_clock_enable(RCC_PWR);
 
     // Set up watchdog
-    //iwdg_start();
+    if (!_DEBUG) {
+        iwdg_start();
+    }
 
     // Heartbeat LED
     gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO4);
@@ -278,24 +280,28 @@ void hal_update_config(void) {
         return;
     }
 
-    taskDISABLE_INTERRUPTS();
-    flash_unlock();
-    flash_clear_status_flags();
-    flash_erase_page((uint32_t)&config_flash); // Assume it's only one page and is page-aligned
-    uint32_t flash_status = flash_get_status_flags();
-    configASSERT(flash_status == FLASH_SR_EOP)
-    flash_clear_status_flags();
-
-    for(size_t i = 0; i < sizeof (config); i+=4) {
-        // Program the word
-        flash_program_word((uint32_t)&config_flash + i, *((uint32_t*)((uint32_t)&config + i)));
-        flash_status = flash_get_status_flags();
-        configASSERT(flash_status == FLASH_SR_EOP);
+    if (!_DEBUG) {
+        iwdg_reset();
+        taskDISABLE_INTERRUPTS();
+        flash_unlock();
         flash_clear_status_flags();
-        // Verify word was correctly written
-        configASSERT(*((uint32_t*)((uint32_t)&config_flash + i)) == *((uint32_t*)((uint32_t)&config + i)));
-    }
+        flash_erase_page((uint32_t)&config_flash); // Assume it's only one page and is page-aligned
+        uint32_t flash_status = flash_get_status_flags();
+        configASSERT(flash_status == FLASH_SR_EOP)
+        flash_clear_status_flags();
 
-    flash_lock();
-    taskENABLE_INTERRUPTS();
+        for(size_t i = 0; i < sizeof (config); i+=4) {
+            // Program the word
+            flash_program_word((uint32_t)&config_flash + i, *((uint32_t*)((uint32_t)&config + i)));
+            flash_status = flash_get_status_flags();
+            configASSERT(flash_status == FLASH_SR_EOP);
+            flash_clear_status_flags();
+            // Verify word was correctly written
+            configASSERT(*((uint32_t*)((uint32_t)&config_flash + i)) == *((uint32_t*)((uint32_t)&config + i)));
+        }
+
+        flash_lock();
+        taskENABLE_INTERRUPTS();
+        iwdg_reset();
+    }
 }

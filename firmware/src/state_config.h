@@ -13,13 +13,15 @@
 
 #define RELAY_DEF \
 RELAY_STATE(uint8_t, state, "state %d", DEFAULT_OUTPUT) \
-RELAY_CONFIG(uint8_t, mode, "mode %d", DEFAULT_OUTPUT) \
+RELAY_CONFIG(uint8_t, mode, "mode %s", relay_mode_to_string) \
 RELAY_CONFIG(uint8_t, on_hour, "on/hour %d", DEFAULT_OUTPUT) \
 RELAY_CONFIG(uint8_t, off_hour, "off/hour %d", DEFAULT_OUTPUT) \
 
 #define RELAY_SET_DEF \
 RELAY_SET(state, "state/set %d", int, relay_set_state, &) \
 RELAY_SET(mode, "mode/set %8s", char[9], relay_set_mode, ) \
+RELAY_SET(on_hour, "on/hour/set %d", int, relay_set_on_hour, &) \
+RELAY_SET(off_hour, "off/hour/set %d", int, relay_set_off_hour, &) \
 
 #define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) typeof (TYPE) NAME;
 #define RELAY_CONFIG RELAY_STATE
@@ -46,11 +48,12 @@ struct config_relay {
 #undef RELAY_STATE
 #undef RELAY_CONFIG
 
+// NOTE: Application should not use config.
+// config is a subset of state
+
 struct config {
     struct config_relay relay[2];
 };
-
-extern struct config config; // Defined by HAL
 
 #define CONFIG_DEFAULTS {\
 }

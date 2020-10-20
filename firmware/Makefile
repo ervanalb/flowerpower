@@ -35,6 +35,8 @@ ARCH_FLAGS=-mcpu=cortex-m0 -mthumb -msoft-float
 
 OPENCM3_DIR=libopencm3
 
+CFLAGS += -D_DEBUG=1
+
 include rules.mk
 
 .PHONY: gdb load loadquit flash
