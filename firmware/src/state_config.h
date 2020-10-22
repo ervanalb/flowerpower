@@ -6,9 +6,6 @@
 
 #include "hal.h"
 
-#define RELAY_MODE_RAW 0
-#define RELAY_MODE_SCHEDULE 1
-
 #define DEFAULT_OUTPUT
 
 #define GLOBAL_DEF \
@@ -31,16 +28,21 @@ RELAY_SET(off_hour, "off_hour/set %d", int, relay_set_off_hour, &) \
 #define POT_DEF \
 POT_STATE(int8_t, pump, "pump %d", DEFAULT_OUTPUT) \
 POT_STATE(int8_t, sense, "sense %d", DEFAULT_OUTPUT) \
-POT_CONFIG(int16_t, flow_rate, "flow_rate %d", DEFAULT_OUTPUT) \
-POT_CONFIG(int16_t, max_container, "max_container %d", DEFAULT_OUTPUT) \
-POT_CONFIG(int16_t, max_extra_flood, "max_extra_flood %d", DEFAULT_OUTPUT) \
-POT_CONFIG(int16_t, max_extra_drain, "max_extra_drain %d", DEFAULT_OUTPUT) \
-POT_STATE(int16_t, fluid_estimate, "fluid_estimate %d", DEFAULT_OUTPUT) \
-POT_STATE(int16_t, container_estimate, "container_estimate %d", DEFAULT_OUTPUT) \
-POT_STATE(int16_t, setpoint, "setpoint %d", DEFAULT_OUTPUT) \
+POT_CONFIG(int8_t, mode, "mode %s", pot_mode_to_string) \
+POT_CONFIG(uint32_t, max_container, "max_container %lu", DEFAULT_OUTPUT) \
+POT_CONFIG(uint32_t, max_extra_flood, "max_extra_flood %lu", DEFAULT_OUTPUT) \
+POT_CONFIG(uint32_t, max_extra_drain, "max_extra_drain %lu", DEFAULT_OUTPUT) \
+POT_STATE(int32_t, fluid, "fluid %ld", DEFAULT_OUTPUT) \
+POT_STATE(int32_t, container, "container %ld", DEFAULT_OUTPUT) \
+POT_STATE(int8_t, level_setpoint, "level_setpoint %d", DEFAULT_OUTPUT) \
+POT_STATE(int8_t, level, "level %d", DEFAULT_OUTPUT) \
+POT_STATE(int8_t, error, "error %s", pot_error_to_string) \
 
 #define POT_SET_DEF \
 POT_SET(pump, "pump/set %d", int, pump_set, &) \
+POT_SET(mode, "mode/set %13s", char[14], pot_set_mode, ) \
+POT_SET(mode, "level_setpoint/set %d", int, pot_set_level_setpoint, &) \
+// TODO: make fluid and container settable
 
 #define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) typeof (TYPE) NAME;
 #define RELAY_CONFIG RELAY_STATE
@@ -100,6 +102,12 @@ struct config {
 #undef GLOBAL_CONFIG
 
 #define CONFIG_DEFAULTS {\
+    .pot = {[0 ... N_POTS - 1] = { \
+            .max_container = 150000, \
+            .max_extra_flood = 20000, \
+            .max_extra_drain = 20000, \
+        } \
+    } \
 }
 
 void state_init(void);

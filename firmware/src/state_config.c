@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "comms.h"
+#include "control.h"
 #include "hal.h"
 
 struct state state;
@@ -25,6 +26,10 @@ static void relay_set_mode(size_t i, const char *value);
 static void relay_set_on_hour(size_t i, int value);
 static void relay_set_off_hour(size_t i, int value);
 static void pump_set(size_t i, int value);
+static const char *pot_mode_to_string(uint8_t mode);
+static void pot_set_mode(size_t i, const char *value);
+static const char *pot_error_to_string(uint8_t error);
+static void pot_set_level_setpoint(size_t i, int value);
 
 // This semaphore is probably not required when preemption = 0
 // but might as well be a little extra safe
@@ -84,8 +89,6 @@ static void publish_state_task(void *pvParameters) {
     (void)pvParameters;
 
     const TickType_t publish_period = pdMS_TO_TICKS(10000);
-
-    load_state_from_config();
 
     TickType_t last_send_all = 0;
 
@@ -161,6 +164,8 @@ static void publish_state_task(void *pvParameters) {
 }
 
 void state_init(void) {
+    load_state_from_config();
+
     configASSERT(xTaskCreate(publish_state_task, "publish_state", TASK_STACK_SIZE, NULL, 1, &publish_state_task_handle) == pdTRUE);
     state_semaphore = xSemaphoreCreateMutex();
     configASSERT(state_semaphore);
@@ -340,6 +345,51 @@ static void relay_set_off_hour(size_t i, int value) {
 static void pump_set(size_t i, int value) {
     if (value >= -1 && value <= 1) {
         state.pot[i].pump = value;
+        state.pot[i].mode = POT_MODE_RAW;
+        if (value != 0) {
+            state.pot[i].fluid = -1;
+            state.pot[i].level_setpoint = -1;
+        }
+    }
+}
+
+static const char *pot_mode_to_string(uint8_t mode) {
+    switch (mode) {
+        case POT_MODE_RAW:
+            return "RAW";
+        case POT_MODE_LEVEL_CONTROL:
+            return "LEVEL_CONTROL";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+static void pot_set_mode(size_t i, const char *value) {
+    if (strcmp(value, "RAW") == 0) {
+        state.pot[i].mode = POT_MODE_RAW;
+    } else if (strcmp(value, "LEVEL_CONTROL") == 0) {
+        state.pot[i].mode = POT_MODE_LEVEL_CONTROL;
+    }
+}
+
+static void pot_set_level_setpoint(size_t i, int value) {
+    if (value >= 0 && value <= 100) {
+        state.pot[i].level_setpoint = value;
+        state.pot[i].mode = POT_MODE_LEVEL_CONTROL;
+        control_pot_change_level_setpoint(i);
+    }
+}
+
+static const char *pot_error_to_string(uint8_t error) {
+    switch (error) {
+        case POT_ERROR_NONE:
+            return "NONE";
+        case POT_ERROR_UNCALIBRATED:
+            return "UNCALIBRATED";
+        case POT_ERROR_OVERFILLED:
+            return "OVERFILLED";
+        default:
+            return "UNKNOWN";
     }
 }
 
