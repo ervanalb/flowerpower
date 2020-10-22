@@ -60,6 +60,7 @@ static void pots(void) {
         return;
     }
     uint32_t delta = time - last_time;
+    last_time = time;
 
     state_semaphore_take();
 
@@ -102,7 +103,6 @@ static void pots(void) {
 
         // Update visible state from shadow state
         if (shadow_state_pot[i].fluid_estimate_good) {
-            configASSERT(shadow_state_pot[i].container_estimate_good);
             state.pot[i].fluid = shadow_state_pot[i].fluid_estimate;
             // Clamp to between 0 and container_estimate
             if (state.pot[i].fluid > shadow_state_pot[i].container_estimate) {
@@ -123,7 +123,7 @@ static void pots(void) {
         }
         if (shadow_state_pot[i].fluid_estimate_good && shadow_state_pot[i].container_estimate_good) {
             configASSERT(state.pot[i].container > 0);
-            configASSERT(state.pot[i].container > state.pot[i].fluid);
+            configASSERT(state.pot[i].container >= state.pot[i].fluid);
             state.pot[i].level = 100 * state.pot[i].fluid / state.pot[i].container;
         } else {
             state.pot[i].level = -1;
@@ -133,7 +133,7 @@ static void pots(void) {
     state_semaphore_give();
 }
 
-static void pumps(void) {
+static void sense(void) {
     state_semaphore_take();
     state.overflow = hal_sense_overflow();
     for (size_t i = 0; i < N_POTS; i++) {
@@ -145,7 +145,13 @@ static void pumps(void) {
         if (state.overflow) {
             state.pot[i].pump = 0;
         }
+    }
+    state_semaphore_give();
+}
 
+static void pumps(void) {
+    state_semaphore_take();
+    for (size_t i = 0; i < N_POTS; i++) {
         if (state.pot[i].pump == 1) {
             hal_pump_flood(i + 1);
         } else if (state.pot[i].pump == -1) {
@@ -163,6 +169,7 @@ static void control_loop(void *pvParameters) {
         relays_schedule();
         relays();
 
+        sense();
         pots();
         pumps();
 
@@ -227,7 +234,7 @@ void control_pot_change_level_setpoint(size_t index) {
     if (shadow_state_pot[index].fluid_estimate == -1) {
         // Make a worst-case setpoint estimate
         if (state.pot[index].level_setpoint == 0) {
-            shadow_state_pot[index].fluid_estimate = state.pot[index].container;
+            shadow_state_pot[index].fluid_estimate = shadow_state_pot[index].container_estimate;
         } else if (state.pot[index].level_setpoint == 100) {
             shadow_state_pot[index].fluid_estimate = 0;
         } else {
@@ -250,9 +257,9 @@ void control_pot_change_level_setpoint(size_t index) {
 
     shadow_state_pot[index].error_on_setpoint_achieved = false;
     if (state.pot[index].level_setpoint == 0) {
-        shadow_state_pot[index].fluid_estimate = -state.pot[index].max_extra_drain;
+        shadow_state_pot[index].fluid_setpoint = -state.pot[index].max_extra_drain;
     } else if (state.pot[index].level_setpoint == 100) {
-        shadow_state_pot[index].fluid_estimate = shadow_state_pot[index].container_estimate + state.pot[index].max_extra_flood;
+        shadow_state_pot[index].fluid_setpoint = shadow_state_pot[index].container_estimate + state.pot[index].max_extra_flood;
         shadow_state_pot[index].error_on_setpoint_achieved = true;
     } else {
         configASSERT(shadow_state_pot[index].container_estimate_good);
@@ -263,7 +270,7 @@ void control_pot_change_level_setpoint(size_t index) {
 
     if (shadow_state_pot[index].fluid_setpoint > shadow_state_pot[index].fluid_estimate) {
         state.pot[index].pump = 1;
-    } else if (shadow_state_pot[index].fluid_setpoint > shadow_state_pot[index].fluid_estimate) {
+    } else if (shadow_state_pot[index].fluid_setpoint < shadow_state_pot[index].fluid_estimate) {
         state.pot[index].pump = -1;
     } else {
         state.pot[index].pump = 0;

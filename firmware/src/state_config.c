@@ -39,7 +39,7 @@ static SemaphoreHandle_t state_semaphore = NULL;
 static struct state last_state;
 
 static void load_state_from_config(void) {
-    state_semaphore_take();
+    // Called from init (before scheduler), so no semaphores
     for (int i=0; i<N_RELAYS; i++) {
 #define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN)
 #define RELAY_CONFIG(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) state.relay[i].NAME = config.relay[i].NAME;
@@ -54,7 +54,6 @@ static void load_state_from_config(void) {
 #undef POT_STATE
 #undef POT_CONFIG
     }
-    state_semaphore_give();
 }
 
 static void maybe_write_config(void) {

@@ -103,9 +103,9 @@ struct config {
 
 #define CONFIG_DEFAULTS {\
     .pot = {[0 ... N_POTS - 1] = { \
-            .max_container = 150000, \
-            .max_extra_flood = 20000, \
-            .max_extra_drain = 20000, \
+            .max_container = 15000, \
+            .max_extra_flood = 2000, \
+            .max_extra_drain = 2000, \
         } \
     } \
 }
