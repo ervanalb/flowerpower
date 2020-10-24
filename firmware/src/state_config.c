@@ -30,6 +30,13 @@ static const char *pot_mode_to_string(uint8_t mode);
 static void pot_set_mode(size_t i, const char *value);
 static const char *pot_error_to_string(uint8_t error);
 static void pot_set_level_setpoint(size_t i, int value);
+static void pot_set_fluid(size_t i, int value);
+static void pot_set_container(size_t i, int value);
+static void pot_set_start_hour(size_t i, int value);
+static void pot_set_end_hour(size_t i, int value);
+static void pot_set_period_hours(size_t i, int value);
+static void pot_set_start_minute(size_t i, int value);
+static void pot_set_end_minute(size_t i, int value);
 
 // This semaphore is probably not required when preemption = 0
 // but might as well be a little extra safe
@@ -358,6 +365,8 @@ static const char *pot_mode_to_string(uint8_t mode) {
             return "RAW";
         case POT_MODE_LEVEL_CONTROL:
             return "LEVEL_CONTROL";
+        case POT_MODE_LEVEL_SCHEDULE:
+            return "LEVEL_SCHEDULE";
         default:
             return "UNKNOWN";
     }
@@ -368,6 +377,8 @@ static void pot_set_mode(size_t i, const char *value) {
         state.pot[i].mode = POT_MODE_RAW;
     } else if (strcmp(value, "LEVEL_CONTROL") == 0) {
         state.pot[i].mode = POT_MODE_LEVEL_CONTROL;
+    } else if (strcmp(value, "LEVEL_SCHEDULE") == 0) {
+        state.pot[i].mode = POT_MODE_LEVEL_SCHEDULE;
     }
 }
 
@@ -387,8 +398,54 @@ static const char *pot_error_to_string(uint8_t error) {
             return "UNCALIBRATED";
         case POT_ERROR_OVERFILLED:
             return "OVERFILLED";
+        case POT_ERROR_OVERFLOW:
+            return "OVERFLOW";
         default:
             return "UNKNOWN";
+    }
+}
+
+static void pot_set_fluid(size_t i, int value) {
+    if (value >= -1) {
+        state.pot[i].fluid = value;
+        control_pot_change_fluid_estimate(i);
+    }
+}
+
+static void pot_set_container(size_t i, int value) {
+    if (value >= -1) {
+        state.pot[i].container = value;
+        control_pot_change_container_estimate(i);
+    }
+}
+
+static void pot_set_start_hour(size_t i, int value) {
+    if (value >= 0 && value <= 23) {
+        state.pot[i].start_hour = value;
+    }
+}
+
+static void pot_set_end_hour(size_t i, int value) {
+    if (value >= 0 && value <= 23) {
+        state.pot[i].end_hour = value;
+    }
+}
+
+static void pot_set_period_hours(size_t i, int value) {
+    if (value >= 1 && value <= 24) {
+        state.pot[i].period_hours = value;
+    }
+}
+
+static void pot_set_start_minute(size_t i, int value) {
+    if (value >= 0 && value <= 59) {
+        state.pot[i].start_minute = value;
+    }
+}
+
+static void pot_set_end_minute(size_t i, int value) {
+    if (value >= 0 && value <= 59) {
+        state.pot[i].end_minute = value;
     }
 }
 

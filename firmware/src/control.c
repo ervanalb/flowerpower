@@ -18,6 +18,8 @@ static struct {
     int32_t fluid_setpoint; // The setpoint expressed in ms
     int8_t last_direction; // Which way the pump was going last iteration
     bool error_on_setpoint_achieved; // Whether achieving the setpoint constitutes an "error" (e.g. if we are trying to fill all the way up and never sense water)
+
+    int8_t last_scheduled_setpoint;
 } shadow_state_pot[N_POTS];
 
 static void relays_schedule(void) {
@@ -51,6 +53,55 @@ static void relays(void) {
     }
 }
 
+static void pots_schedule(void) {
+    struct datetime dt;
+    hal_time_get(&dt);
+
+    state_semaphore_take();
+    for (size_t i = 0; i < N_POTS; i++) {
+        if (state.pot[i].mode == POT_MODE_LEVEL_SCHEDULE) {
+            uint8_t start_hour = state.pot[i].start_hour;
+            uint8_t end_hour = state.pot[i].end_hour;
+            uint8_t period_hours = state.pot[i].period_hours;
+            uint8_t start_minute = state.pot[i].start_minute;
+            uint8_t end_minute = state.pot[i].end_minute;
+            uint8_t hour = dt.hour;
+            uint8_t minute = dt.minute;
+
+            int8_t hour_count = -1;
+            if (end_hour >= start_hour) {
+                if (hour >= start_hour && hour < end_hour) {
+                    hour_count = hour - start_hour;
+                }
+            } else {
+                if (hour >= start_hour || hour < end_hour) {
+                    if (hour >= start_hour) {
+                        hour_count = hour - start_hour;
+                    } else {
+                        hour_count = hour + (start_hour - end_hour);
+                    }
+                }
+            }
+
+            uint8_t level = 0;
+            if (hour_count >= 0
+             && hour_count % period_hours == 0
+             && minute >= start_minute
+             && minute <= end_minute) {
+                level = 100;
+            }
+            if (level != shadow_state_pot[i].last_scheduled_setpoint) {
+                state.pot[i].level_setpoint = level;
+                control_pot_change_level_setpoint(i);
+                shadow_state_pot[i].last_scheduled_setpoint = level;
+            }
+        } else {
+            shadow_state_pot[i].last_scheduled_setpoint = -1;
+        }
+    }
+    state_semaphore_give();
+}
+
 static void pots(void) {
     uint32_t time = xTaskGetTickCount();
     static uint32_t last_time;
@@ -65,7 +116,7 @@ static void pots(void) {
     state_semaphore_take();
 
     for (size_t i = 0; i < N_POTS; i++) {
-        if (state.pot[i].mode == POT_MODE_LEVEL_CONTROL) {
+        if (state.pot[i].mode == POT_MODE_LEVEL_CONTROL || state.pot[i].mode == POT_MODE_LEVEL_SCHEDULE) {
             // Main pot fluid level control loop
             if (shadow_state_pot[i].last_direction != 0) {
                 shadow_state_pot[i].fluid_estimate += shadow_state_pot[i].last_direction * delta;
@@ -75,7 +126,13 @@ static void pots(void) {
             }
 
             // Handle transitions
-            if (shadow_state_pot[i].last_direction == 1 && shadow_state_pot[i].fluid_estimate >= shadow_state_pot[i].fluid_setpoint) {
+            if (state.overflow) {
+                // Uncalibrate the system
+                shadow_state_pot[i].fluid_estimate_good = false;
+                shadow_state_pot[i].container_estimate_good = false;
+                shadow_state_pot[i].container_estimate = state.pot[i].max_container;
+                state.pot[i].error = POT_ERROR_OVERFLOW;
+            } else if (shadow_state_pot[i].last_direction == 1 && shadow_state_pot[i].fluid_estimate >= shadow_state_pot[i].fluid_setpoint) {
                 if (shadow_state_pot[i].error_on_setpoint_achieved) {
                     // Filled more than expected. Uncalibrate the system
                     shadow_state_pot[i].fluid_estimate_good = false;
@@ -170,6 +227,7 @@ static void control_loop(void *pvParameters) {
         relays();
 
         sense();
+        pots_schedule();
         pots();
         pumps();
 
@@ -231,7 +289,7 @@ void control_pot_change_level_setpoint(size_t index) {
         return;
     }
 
-    if (shadow_state_pot[index].fluid_estimate == -1) {
+    if (!shadow_state_pot[index].fluid_estimate_good) {
         // Make a worst-case setpoint estimate
         if (state.pot[index].level_setpoint == 0) {
             shadow_state_pot[index].fluid_estimate = shadow_state_pot[index].container_estimate;
@@ -270,9 +328,12 @@ void control_pot_change_level_setpoint(size_t index) {
 
     if (shadow_state_pot[index].fluid_setpoint > shadow_state_pot[index].fluid_estimate) {
         state.pot[index].pump = 1;
+        shadow_state_pot[index].last_direction = 1;
     } else if (shadow_state_pot[index].fluid_setpoint < shadow_state_pot[index].fluid_estimate) {
         state.pot[index].pump = -1;
+        shadow_state_pot[index].last_direction = -1;
     } else {
         state.pot[index].pump = 0;
+        shadow_state_pot[index].last_direction = 0;
     }
 }

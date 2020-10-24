@@ -16,8 +16,8 @@ GLOBAL_STATE(uint8_t, overflow, "overflow %d", DEFAULT_OUTPUT) \
 #define RELAY_DEF \
 RELAY_STATE(uint8_t, state, "state %d", DEFAULT_OUTPUT) \
 RELAY_CONFIG(uint8_t, mode, "mode %s", relay_mode_to_string) \
-RELAY_CONFIG(uint8_t, on_hour, "on/hour %d", DEFAULT_OUTPUT) \
-RELAY_CONFIG(uint8_t, off_hour, "off/hour %d", DEFAULT_OUTPUT) \
+RELAY_CONFIG(uint8_t, on_hour, "on_hour %d", DEFAULT_OUTPUT) \
+RELAY_CONFIG(uint8_t, off_hour, "off_hour %d", DEFAULT_OUTPUT) \
 
 #define RELAY_SET_DEF \
 RELAY_SET(state, "state/set %d", int, relay_set_state, &) \
@@ -37,12 +37,23 @@ POT_STATE(int32_t, container, "container %ld", DEFAULT_OUTPUT) \
 POT_STATE(int8_t, level_setpoint, "level_setpoint %d", DEFAULT_OUTPUT) \
 POT_STATE(int8_t, level, "level %d", DEFAULT_OUTPUT) \
 POT_STATE(int8_t, error, "error %s", pot_error_to_string) \
+POT_CONFIG(uint8_t, start_hour, "start_hour %d", DEFAULT_OUTPUT) \
+POT_CONFIG(uint8_t, end_hour, "end_hour %d", DEFAULT_OUTPUT) \
+POT_CONFIG(uint8_t, period_hours, "period_hours %d", DEFAULT_OUTPUT) \
+POT_CONFIG(uint8_t, start_minute, "start_minute %d", DEFAULT_OUTPUT) \
+POT_CONFIG(uint8_t, end_minute, "end_minute %d", DEFAULT_OUTPUT) \
 
 #define POT_SET_DEF \
 POT_SET(pump, "pump/set %d", int, pump_set, &) \
-POT_SET(mode, "mode/set %13s", char[14], pot_set_mode, ) \
-POT_SET(mode, "level_setpoint/set %d", int, pot_set_level_setpoint, &) \
-// TODO: make fluid and container settable
+POT_SET(mode, "mode/set %14s", char[14], pot_set_mode, ) \
+POT_SET(level_setpoint, "level_setpoint/set %d", int, pot_set_level_setpoint, &) \
+POT_SET(fluid, "fluid/set %d", int, pot_set_fluid, &) \
+POT_SET(container, "container/set %d", int, pot_set_container, &) \
+POT_SET(start_hour, "start_hour/set %d", int, pot_set_start_hour, &) \
+POT_SET(end_hour, "end_hour/set %d", int, pot_set_end_hour, &) \
+POT_SET(period_hours, "period_hours/set %d", int, pot_set_period_hours, &) \
+POT_SET(start_minute, "start_minute/set %d", int, pot_set_start_minute, &) \
+POT_SET(end_minute, "end_minute/set %d", int, pot_set_end_minute, &) \
 
 #define RELAY_STATE(TYPE, NAME, OUTPUT_FMT, OUTPUT_FN) typeof (TYPE) NAME;
 #define RELAY_CONFIG RELAY_STATE
@@ -102,12 +113,22 @@ struct config {
 #undef GLOBAL_CONFIG
 
 #define CONFIG_DEFAULTS {\
+    .relay = {[0 ... N_RELAYS - 1] = { \
+            .on_hour = 8, \
+            .off_hour = 20, \
+        } \
+    }, \
     .pot = {[0 ... N_POTS - 1] = { \
             .max_container = 15000, \
             .max_extra_flood = 2000, \
             .max_extra_drain = 2000, \
+            .start_hour = 8, \
+            .end_hour = 20, \
+            .period_hours = 1, \
+            .start_minute = 0, \
+            .end_minute = 15, \
         } \
-    } \
+    }, \
 }
 
 void state_init(void);

@@ -6,10 +6,12 @@
 
 #define POT_MODE_RAW 0
 #define POT_MODE_LEVEL_CONTROL 1
+#define POT_MODE_LEVEL_SCHEDULE 2
 
 #define POT_ERROR_NONE 0
 #define POT_ERROR_UNCALIBRATED 1
 #define POT_ERROR_OVERFILLED 2
+#define POT_ERROR_OVERFLOW 3
 
 void control_init(void);
 
