@@ -426,7 +426,7 @@ static void pot_set_start_hour(size_t i, int value) {
 }
 
 static void pot_set_end_hour(size_t i, int value) {
-    if (value >= 0 && value <= 23) {
+    if (value >= 0 && value <= 24) {
         state.pot[i].end_hour = value;
     }
 }

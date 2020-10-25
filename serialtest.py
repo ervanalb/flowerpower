@@ -1,11 +1,13 @@
 import serial
+import time
+
 with serial.Serial("/dev/ttyACM0") as ser:
-    ser.write(b"/time/set 2020-10-19T22:59:50\n")
-    ser.write(b"/pot/1/start_hour/set 21\n")
-    ser.write(b"/pot/1/end_hour/set 2\n")
-    ser.write(b"/pot/1/period_hours/set 2\n")
-    ser.write(b"/pot/1/start_minute/set 0\n")
-    ser.write(b"/pot/1/stop_minute/set 1\n")
+    #ser.write(b"/time/set 2020-10-19T00:20:00\n")
+    ser.write(b"/pot/1/start_hour/set 0\n")
+    ser.write(b"/pot/1/end_hour/set 24\n")
+    ser.write(b"/pot/1/period_hours/set 1\n")
+    ser.write(b"/pot/1/start_minute/set 30\n")
+    ser.write(b"/pot/1/end_minute/set 40\n")
     ser.write(b"/pot/1/mode/set LEVEL_SCHEDULE\n")
     #ser.write(b"/relay/1/on_hour/set 22\n")
     #ser.write(b"/relay/1/off_hour/set 23\n")
@@ -18,4 +20,4 @@ with serial.Serial("/dev/ttyACM0") as ser:
     while True:
         l = ser.readline().decode()
         if not l.startswith("/pot") or l.startswith("/pot/1"):
-            print(l.strip())
+            print(time.time(), l.strip())

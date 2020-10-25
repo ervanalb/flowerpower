@@ -119,9 +119,9 @@ struct config {
         } \
     }, \
     .pot = {[0 ... N_POTS - 1] = { \
-            .max_container = 15000, \
-            .max_extra_flood = 2000, \
-            .max_extra_drain = 2000, \
+            .max_container = 400000, \
+            .max_extra_flood = 40000, \
+            .max_extra_drain = 40000, \
             .start_hour = 8, \
             .end_hour = 20, \
             .period_hours = 1, \
